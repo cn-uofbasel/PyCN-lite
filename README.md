@@ -15,6 +15,11 @@ Servers included in PyCN-lite (both UNIX and ESP8266):
 Command line tools included (UNIX only):
 * fetch, repo_ls, repo_put, dump_ndn2013, dump_ccnx2015
 
+Library included:
+* NDN and CCNx parsing/formatting library, can be used in IoT end devices
+
+Example config using an ESP8266 as a local ICN/WiFi access point and serving at the same time as a gateway to the NDN testbed:
+
 ![PyCN config](doc/PyCN-config.png "PyCN as an IoT gateway")
 
 
@@ -95,7 +100,7 @@ work in progress
 * add the FLIC library
 * ...
 
-## Confirmed IoT Devices
+## Confirmed IoT devices running the PyCN-lite software:
 
 ESP8266 (features separate WiFis for uplink and local AP, has 28KB RAM)
 * [nodeMCU](http://nodemcu.com/index_en.html)
