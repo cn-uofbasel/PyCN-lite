@@ -5,15 +5,17 @@ README.md v2018-02-06
 This is lightweight implementation of the two ICN protocols NDN and CCNx.
 
 The code is written for Micropython and runs on IoT devices like the
-ESP8266 with 28K RAM, but a UNIX with standard Python3 runtime is
-supported, too.
+ESP8266 with 28K RAM, but a UNIX environment with standard Python3 (or
+Micropython) is supported, too.
 
 Servers included in PyCN-lite (both UNIX and ESP8266):
 * reposerver
-* forwarder (work in progress after having introduced our own event loop)
+* forwarder (work in progress, after having introduced our own event loop)
 
 Command line tools included (UNIX only):
 * fetch, repo_ls, repo_put, dump_ndn2013, dump_ccnx2015
+
+![PyCN config](doc/PyCN-config.png "PyCN as an IoT gateway")
 
 
 ## REPOSERVER Howto (ESP8266)
@@ -21,7 +23,7 @@ Command line tools included (UNIX only):
 * install Micropython on the ESP8266
 * configure the WiFi access point for 192.168.4.1 and essid of your choice
 * transfer the content of the 'icn' source code directory to '/lib/icn' on the ESP8266
-* run the following commands on the console (or put it into the boot.py script):
+* run the following commands on the console (or put them into the boot.py script):
 ```
 >>> import icn.server.repo as r
 >>> r.start()
@@ -60,7 +62,7 @@ prefix (suite=ccnx2015): /ccnx/pycn-lite
 % cd icn/bin
 
 % ./repo_put.py --prefix /ndn/pycn-lite demo_repo_dir /ndn/pycn-lite/LICENSE <../../LICENSE 
-./repo_put.py --prefix /ccnx/pycn-lite --suite ccnx2015 demo_repo_dir /ccnx/pycn-lite/LICENSE <../../LICENSE
+% ./repo_put.py --prefix /ccnx/pycn-lite --suite ccnx2015 demo_repo_dir /ccnx/pycn-lite/LICENSE <../../LICENSE
 ```
 
 The above commands were used to populate the demo repo directory. The
@@ -92,3 +94,8 @@ work in progress
 * validate the packet formats
 * add the FLIC library
 * ...
+
+## Confirmed IoT Devices
+
+ESP8266 (features separate WiFis for uplink and local AP, has 28KB RAM)
+* [nodeMCU](http://nodemcu.com/index_en.html)
