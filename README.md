@@ -1,4 +1,4 @@
-= PyCN-lite
+# PyCN-lite
 
 README.md v2018-02-06
 
@@ -16,7 +16,7 @@ Command line tools included (UNIX only):
 * fetch, repo_ls, repo_put, dump_ndn2013, dump_ccnx2015
 
 
-== REPOSERVER Howto (ESP8266)
+## REPOSERVER Howto (ESP8266)
 
 * install Micropython on the ESP8266
 * configure the WiFi access point for 192.168.4.1 and essid of your choice
@@ -30,7 +30,7 @@ Starting the ICN repo server for ['ndn2013', 'ccnx2015']
 which will start the repo server on port 6363
 
 
-== FETCH Howto (UNIX)
+## FETCH Howto (UNIX)
 ```
 % cd icn/bin
 
@@ -38,7 +38,7 @@ which will start the repo server on port 6363
 % ./fetch.py --suite ccnx2015 192.168.4.1:6363 /ccnx/pycn-lite/LICENSE
 ```
 
-== REPO_LS Howto (UNIX) -- show content of a file system repo
+## REPO_LS Howto (UNIX) -- show content of a file system repo
 ```
 % cd icn/bin
 
@@ -55,7 +55,7 @@ prefix (suite=ndn2013): /ndn/pycn-lite
 prefix (suite=ccnx2015): /ccnx/pycn-lite
 ```
 
-== REPO_PUT Howto (UNIX) - add content to a file system repo
+## REPO_PUT Howto (UNIX) - add content to a file system repo
 ```
 % cd icn/bin
 
@@ -68,7 +68,7 @@ prefix parameter persists a prefix if is it not already existing: the
 parameter can be ommitted in subsequence put operations.
 
 
-== REPOSERVER Howto (UNIX) - run a ICN repo server
+## REPOSERVER Howto (UNIX) - run a ICN repo server
 
 ```
 % cd icn/bin
@@ -80,11 +80,11 @@ parameter can be ommitted in subsequence put operations.
 See icn/server/config.py for default parameters
 
 
-== FORWARDER Howto
+## FORWARDER Howto
 
 work in progress
 
-== TODO
+## TODO
 
 * make this a Python package (setup.cfg etc)
 * move the pycn-lite/icn/bin directory to pycn-lite/bin
