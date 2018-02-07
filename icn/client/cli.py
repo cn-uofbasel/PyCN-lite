@@ -97,6 +97,8 @@ def repo_store_chunk_bytes(repo, name, wire, hashId):
             break
     if not fn:
         raise IOError
+    if len(wire) > 1500:
+        sys.stdout.write("WARNING: chunk has %d bytes, exceeding the max Ethernet frame length of 1500 Bytes\n" % len(wire))
     fn = repo._path + os.sep + fn[0] + '.' + fn[1]
     if os.path.isfile(fn):
         # alert that file exists (or add "-nooverwrite" flag?)

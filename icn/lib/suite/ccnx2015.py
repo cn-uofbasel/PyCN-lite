@@ -8,7 +8,7 @@ except:
     import struct
 
 Suite_name = 'ccnx2015'
-MAX_CHUNK_SIZE = 4096
+MAX_CHUNK_SIZE = 1500-14 # fit in a Ethernet frame
 
 enc = None    # will be set by icn.lib.suite.multi.config()
 
