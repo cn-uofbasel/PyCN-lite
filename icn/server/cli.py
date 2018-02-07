@@ -11,11 +11,11 @@ import os
 import sys
 
 if sys.implementation.name == 'micropython':
-    sys.path.append("/Users/tschudin/proj/pycn-lite")
+    sys.path.append("/Users/tschudin/proj/PyCN-lite")
 
 import icn.lib.network
 import icn.lib.packet
-import icn.server.config # default params
+import icn.server.config
 import icn.server.fwd
 import icn.server.repo
 
@@ -27,10 +27,12 @@ def do_fwd():
     parser.add_argument('addr', metavar="ip:port", type=str)
     args = parser.parse_args()
 
-    loop = asyncio.get_event_loop()
+    addr = args.addr.split(':')
+    icn.server.fwd.start(addr=(addr[0], int(addr[1])))
+
+    '''
     fwd = icn.server.fwd.Forwarder()
 
-    addr = args.addr.split(':')
     listen = loop.create_datagram_endpoint(
                  lambda: icn.server.fwd.FACE(fwd),
                  local_addr=(addr[0], int(addr[1])))
@@ -54,6 +56,7 @@ def do_fwd():
     srv_transport.close()
     repo_transport.close()
     loop.close()
+    '''
 
 # ---------------------------------------------------------------------------
 

@@ -18,7 +18,7 @@ class Loop():
         self.p = uselect.poll()
 
     def register_timer(self, cb, delta, arg):
-        self.time_dict[cb] = [utime.ticks_ms(), delta, arg]
+        self.time_dict[cb] = [utime.ticks_ms(), int(delta*1000), arg]
 
     def udp_open(self, addr, recv_cb, send_done_cb, arg):
         # recv_cb MUST be set
@@ -54,7 +54,7 @@ class Loop():
             for cb in self.time_dict:
                 d = utime.ticks_diff(self.time_dict[cb][0], now)
                 if d < 0:
-                    cb(self.time_dict[cb][2])
+                    cb(self, self.time_dict[cb][2])
                     d = self.time_dict[cb][1]
                     self.time_dict[cb][0] = utime.ticks_add(now, d)
                 if tout == None or d < tout:

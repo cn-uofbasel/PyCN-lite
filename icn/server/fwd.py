@@ -2,14 +2,21 @@
 
 # (c) 2018-02-01 <christian.tschudi@unibas.ch>
 
-'''
-An ICN forwarder
-'''
+# ICN forwarder for NDN and CCNx packets
+# limitation: one forwarder instance only (because of timer callback)
 
-# import asyncio
+import time
+import traceback
+
+try:
+    import micropython
+    import icn.server.event_micro as event
+except:
+    import icn.server.event_std   as event
 
 from icn.lib.packet import ContentPacket, InterestPacket, NackPacket
 import icn.lib.suite.multi
+import icn.server.config
 
 # ----------------------------------------------------------------------
 
@@ -21,15 +28,15 @@ CS_GC_TIME    =  1.0 # in sec
 
 class CS():
 
-    def __init__(self):
+    def __init__(self, loop):
+        self._loop = loop
         self._d = {}
         # self._lock = threading.Lock()
-        self._loop = asyncio.get_event_loop()
-        self._gc = self._loop.create_task(cs_gc(self._loop, self))
+        loop.register_timer(cs_gc, CS_GC_TIME, self)
 
     def add(self, pkt):
         # self._lock.acquire()
-        self._d[pkt._name] = (pkt, self._loop.time())
+        self._d[pkt._name] = (pkt, time.time())
         # self._lock.release()
 
     def lookup(self, pkt):
@@ -42,30 +49,27 @@ class CS():
         # self._lock.release()
         return c
 
-async def cs_gc(loop, cs):
-    while True:
-        await asyncio.sleep(CS_GC_TIME)
-        # print("CS GC loop")
-        exp = loop.time() - CS_TIMEOUT
-        rmset = []
-        # cs._lock.acquire()
-        for n,e in cs._d.items():
-            if e[1] < exp:
-                rmset.append(n)
-        for n in rmset:
-            # print("cs.removing %s" % n)
-            del cs._d[n]
-        # cs._lock.release()
+def cs_gc(loop, cs):
+    exp = time.time() - CS_TIMEOUT
+    rmset = []
+    # cs._lock.acquire()
+    for n,e in cs._d.items():
+        if e[1] < exp:
+            rmset.append(n)
+    for n in rmset:
+        # print("cs.removing %s" % n)
+        del cs._d[n]
+    # cs._lock.release()
 
 
 class PIT():
 
-    def __init__(self, fwd):
+    def __init__(self, loop, fwd):
+        self._loop = loop
         self._fwd = fwd
         self._pending = {}
         # self._lock = threading.Lock()
-        self._loop = asyncio.get_event_loop()
-        self._gc = self._loop.create_task(pit_gc(self._loop, self))
+        loop.register_timer(pit_gc, PIT_GC_TIME, self)
 
     def rx_interest(self, pkt, face, addr): # returns the packet if it is the first
         print("PIT.rx_interest %s" % str(pkt._name))
@@ -104,26 +108,24 @@ class PIT():
         # print("PIT.is_pending %s" % str(name))
         return name in self._pending
 
-async def pit_gc(loop, pit):
-    while True:
-        await asyncio.sleep(PIT_GC_TIME)
-        exp = loop.time() - PIT_TIMEOUT
-        # pit._lock.acquire()
-        rmset = []
-        for n,e in pit._pending.items():
-            if e[1] < exp:
-                if e[2] <= 0:
-                    rmset.append(n)
-                else:
-                    e[1] = loop.time()
-                    e[2] -= 1
-                    pkt = e[3]
-                    for face in pit._fwd._fib.matching_face_iter(pkt):
-                        face.enqueue(pkt)
-        for n in rmset:
-            # print("pit.removing %s" % n)
-            del pit._pending[n]
-        # pit._lock.release()
+def pit_gc(loop, pit):
+    exp = time.time() - PIT_TIMEOUT
+    # pit._lock.acquire()
+    rmset = []
+    for n,e in pit._pending.items():
+        if e[1] < exp:
+            if e[2] <= 0:
+                rmset.append(n)
+        else:
+            e[1] = time.time()
+            e[2] -= 1
+            pkt = e[3]
+            for face in pit._fwd._fib.matching_face_iter(pkt):
+                face.enqueue(pkt)
+    for n in rmset:
+        # print("pit.removing %s" % n)
+        del pit._pending[n]
+    # pit._lock.release()
 
 
 class FIB():
@@ -142,37 +144,61 @@ class FIB():
         raise StopIteration
 
 
-# class FACE(asyncio.DatagramProtocol):
-class FACE():
+class Face():
 
-    def __init__(self, fwd):
+    def __init__(self, loop, fwd, addr):
+        self._loop = loop
         self._fwd = fwd
-        self._transport = None
-
-    def connection_made(self, transport):
-        # print("transport received")
-        self._transport = transport
+        self._sock = loop.udp_open(addr, face_recv_cb, face_send_done_cb, self)
+        self._send_ongoing = False
+        self._one_buffer = None
 
     def datagram_received(self, data, addr):
-        # print("datagram received")
+        print("face: datagram received")
         pkt = icn.lib.suite.multi.decode_wirebytes(data)
         if pkt:
             self._fwd.rx_packet(pkt, self, addr)
 
     def enqueue(self, pkt, dest=None):
-        # print("enqueue %s" % str(pkt._name))
-        if not self._transport:
+        print("face: enqueue %s" % str(pkt._name))
+        if self.send_ongoing:
+            if self._one_buffer == None:
+                self._one_buffer = (pkt, dest)
+            else:
+                print("tail drop")
             return
+        self._send_ongoing = True
         wb, _ = pkt.to_wirebytes()
         print("sending %d bytes to %s" % (len(wb), str(dest)))
-        self._transport.sendto(wb, dest)
+        self._loop.udp_sendto(self._sock, wb, dest)
         
-                
+def face_recv_cb(loop, s, face):
+    try:
+        buf, addr = s.recvfrom(4096)
+        print("face: got %d bytes" % len(buf))
+        face.datagram_received(buf, addr)
+    except:
+        print("oops")
+        traceback_exc()
+
+def face_send_done_cb(loop, s, face):
+    pkt = face._one_buffer
+    if pkt == None:
+        self._send_ongoing = False
+        return
+    wb, _ = pkt[0].to_wirebytes()
+    dest = pkt[1]
+    self._one_buffer = None
+    print("cb sending %d bytes to %s" % (len(wb), str(dest)))
+    self._loop.udp_sendto(face._sock, wb, dest)
+
+
 class Forwarder():
 
-    def __init__(self):
-        self._cs = CS()
-        self._pit = PIT(self)
+    def __init__(self, loop):
+        self._loop = loop
+        self._cs = CS(loop)
+        self._pit = PIT(loop, self)
         self._fib = FIB()
 
     def rx_packet(self, pkt, face, addr): # returns data obj if in the CS
@@ -191,5 +217,21 @@ class Forwarder():
         if isinstance(pkt, (ContentPacket, NackPacket)):
             for face,addr in self._pit.waiting_face_iter(pkt):
                 face.enqueue(pkt, addr)
+
+# ---------------------------------------------------------------------------
+
+def start(addr = icn.server.config.default_lan_if, \
+          defaultRoute = icn.server.config.default_wan_route):
+
+    loop = event.Loop()
+
+    theForwarder = Forwarder(loop)
+    theFace = Face(loop, theForwarder, addr)
+    theForwarder._fib.add_rule(defaultRoute[0], defaultRoute[1])
+
+    sn = [ s.Suite_name for s in icn.lib.suite.multi.Suites ]
+    print("Starting the ICN forwarder at %s for %s" % (str(addr), str(sn)))
+
+    loop.forever()
 
 # eof

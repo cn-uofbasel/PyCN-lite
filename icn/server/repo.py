@@ -32,14 +32,14 @@ def repo_recv_cb(loop, s, repo):
     # print("repo: sending chunk for " + pkt._name.to_string())
     loop.udp_sendto(s, wire, addr)
 
-def start(addr = icn.server.config.default_addr,
-          path = icn.server.config.default_path):
+def start(addr = icn.server.config.default_lan_if,
+          path = icn.server.config.default_repo_path):
     theRepo = icn.server.repo_fs.RepoFS(path)
     loop = event.Loop()
     sock = loop.udp_open(addr, repo_recv_cb, None, theRepo)
     
     sn = [ s.Suite_name for s in icn.lib.suite.multi.Suites ]
-    print("Starting the ICN repo server for " + str(sn))
+    print("Starting the ICN repo server at %s for %s " % (str(addr),str(sn)))
 
     loop.forever()
 

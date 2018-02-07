@@ -54,7 +54,7 @@ class Loop():
             for cb in self.time_dict:
                 d = self.time_dict[cb][0] - now
                 if d < 0:
-                    cb(self.time_dict[cb][2])
+                    cb(self, self.time_dict[cb][2])
                     d = self.time_dict[cb][1]
                     self.time_dict[cb][0] = now + d
                 if tout == None or d < tout:
