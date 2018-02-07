@@ -36,24 +36,30 @@ def suite_from_str(suite_name):
 
 def decode_wirebytes(buf):
     for s in Suites:
-        if s.is_interest_wirebytes(buf):
-            d, _ = s.decode_interest_wirebytes(buf)
-            hashId = d['hashId'] if 'hashId' in d else None
-            n = icn.lib.packet.Name(suite=s, hashId = hashId)
-            n._comps = d['name']
-            return icn.lib.packet.InterestPacket(n, buf)
+        try:
+            if s.is_interest_wirebytes(buf):
+                d, _ = s.decode_interest_wirebytes(buf)
+                hashId = d['hashId'] if 'hashId' in d else None
+                n = icn.lib.packet.Name(suite=s, hashId = hashId)
+                n._comps = d['name']
+                return icn.lib.packet.InterestPacket(n, buf)
+        except:
+            pass
 
-        if s.is_data_wirebytes(buf):
-            d, _ = s.decode_data_wirebytes(buf)
-            metadict = d['meta'] if 'meta' in d else None
-            n = icn.lib.packet.Name(suite=s)
-            n._comps = d['name']
-            # TODO: check whether meta says that this is a nack ...
-            # ... 'contentType' in metadict and \
-            #   metadict['contentType'] == icn.lib.suite.ndn2013.ContentType_nack:
-            #    return icn.lib.packet.NackPacket(n, d['data'])
-            return icn.lib.packet.ContentPacket(n, payload=d['data'],
-                                                wirebytes=buf, meta=metadict)
+        try:
+            if s.is_data_wirebytes(buf):
+                d, _ = s.decode_data_wirebytes(buf)
+                metadict = d['meta'] if 'meta' in d else None
+                n = icn.lib.packet.Name(suite=s)
+                n._comps = d['name']
+                # TODO: check whether meta says that this is a nack ...
+                # ... 'contentType' in metadict and \
+                #   metadict['contentType'] == ndn2013.ContentType_nack:
+                #    return icn.lib.packet.NackPacket(n, d['data'])
+                return icn.lib.packet.ContentPacket(n, payload=d['data'],
+                                                 wirebytes=buf, meta=metadict)
+        except:
+            pass
 
     return None
 
