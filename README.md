@@ -10,8 +10,8 @@ and runs on IoT devices like the ESP8266 with 28K RAM; UNIX
 environments with standard Python3 (or Micropython) are supported, too.
 
 Servers included in PyCN-lite (both UNIX and ESP8266):
+* forwarder
 * reposerver
-* forwarder (work in progress, after having introduced our own event loop)
 
 Command line tools included (UNIX only):
 * fetch, repo_ls, repo_put, dump_ndn2013, dump_ccnx2015
@@ -55,9 +55,6 @@ which will start the forwarder on port 6363. CTRL-C ends server execution.
 ```
 >>> import icn.server.repo as r
 >>> r.start()
-
->>> import icn.server.fwd as f
->>> f.start()
 PyCN-lite repo server at ('192.168.4.1', 6363) serving ['ndn2013', 'ccnx2015']
 ```
 which will start the repo server on port 6363. CTRL-C ends server execution.
@@ -65,19 +62,21 @@ which will start the repo server on port 6363. CTRL-C ends server execution.
 
 ## FETCH Howto (UNIX commandline)
 ```
+% cd PyCN-lite
+% export PYTHONPATH=`pwd`
 % cd icn/bin
 
 % ./fetch.py 192.168.4.1:6363 /ndn/pycn-lite/LICENSE
 % ./fetch.py --suite ccnx2015 192.168.4.1:6363 /ccnx/pycn-lite/LICENSE
 ```
 
-## REPO_LS Howto (UNIX) -- show content of a file system repo
+## REPO_LS Howto (UNIX commandline) -- show content of a file system repo
 ```
 % cd icn/bin
 
 % ls -1 demo_repo_dir/
-238703794c9a9d8f5757d92f.d65303ac7a9a1b94ec06f7c0
-350d8f87c7c04e7e56e212b4.7eba6e1b94ad4f8786ade4d6
+238703794c9a9d8f5757d92f.7d927eef66cd1f871279a6ac
+350d8f87c7c04e7e56e212b4.6fb12aec48b6432bd3fd337a
 prefix.3885558c37222613acca6faa
 prefix.ac6dcf268096fcc84a8238dc
 
@@ -88,20 +87,22 @@ prefix (suite=ndn2013): /ndn/pycn-lite
 prefix (suite=ccnx2015): /ccnx/pycn-lite
 ```
 
-## REPO_PUT Howto (UNIX) - add content to a file system repo
+## REPO_PUT Howto (UNIX commandline) - add content to a file system repo
 ```
 % cd icn/bin
 
-% ./repo_put.py --prefix /ndn/pycn-lite demo_repo_dir /ndn/pycn-lite/LICENSE <../../LICENSE 
-% ./repo_put.py --prefix /ccnx/pycn-lite --suite ccnx2015 demo_repo_dir /ccnx/pycn-lite/LICENSE <../../LICENSE
+% ./repo_put.py --prefix /ndn/pycn-lite demo_repo_dir /ndn/pycn-lite/LICENSE <../../LICENSE.trimmed 
+% ./repo_put.py --prefix /ccnx/pycn-lite --suite ccnx2015 demo_repo_dir /ccnx/pycn-lite/LICENSE <../../LICENSE.trimmed
 ```
 
 The above commands were used to populate the demo repo directory. The
 prefix parameter persists a prefix if is it not already existing: the
-parameter can be ommitted in subsequence put operations.
+parameter can be ommitted in subsequence put operations. Note that
+a trimmed version of the license file was used such that the chunks fit
+in a single Ethernet frame, even when travelling over UDP.
 
 
-## REPOSERVER Howto (UNIX) - run a ICN repo server
+## REPOSERVER Howto (UNIX commandline) - run a ICN repo server
 
 ```
 % cd icn/bin
@@ -123,6 +124,7 @@ work in progress
 * move the pycn-lite/icn/bin directory to pycn-lite/bin
 * remove the absolute paths for micropython
 * validate the packet formats
+# add a fwd+repo server for the ESP8266
 * add the FLIC library
 * ...
 
