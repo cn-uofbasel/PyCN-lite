@@ -84,9 +84,8 @@ def pit_gc(loop, pit):
                 rmset.append(n)
             else:
                 # print("pit_gc %s %s" % (str(n),str(e)))
-                x = e[2] - 1
-                e[2] = x
                 e[1] = event.time(PIT_TIMEOUT)
+                e[2] -= 1
                 pkt = e[3]
                 face = pit._fwd.fib_lpm(pkt._name)
                 if face:
@@ -136,57 +135,61 @@ class Forwarder:
     def __init__(self, loop):
         self._pit = PIT(loop, self)
         self._fib = {}
-        self._cs = {}
-        self._cs_sz = 0
+        #self._cs = {}
+        #self._cs_sz = 0
         self._pkt_in, self._pkt_out, self._pkt_nvld = (0, 0, 0)
-        loop.register_timer(cs_gc_cb, CS_GC_TIME, self)
+        #loop.register_timer(cs_gc_cb, CS_GC_TIME, self)
         loop.register_timer(fwd_status_cb, FWD_STATUS, self)
 
     def fib_add_rule(self, name, face):
         self._fib[name] = face
 
     def fib_lpm(self, name): # returns the face
-        dest = None
+        destFace = None
+        destPfx = None
         for pfx,face in self._fib.items():
             if pfx.is_prefix_of(name):
-                if not dest or len(pfx._comps) > len(dest.comps):
-                    dest = face
-        return dest
+                if not destFace or len(pfx._comps) > len(destPfx._comps):
+                    destFace = face
+                    destPfx = pfx
+        return destFace
 
     def rx_packet(self, pkt, face, addr): # returns data obj if in the CS
+        # print("fwd.rx_packet()", pkt._name, type(pkt))
         self._pkt_in += 1
         if isinstance(pkt, InterestPacket):
-            # print("CS.lookup", pkt._name)
-            if pkt._name in self._cs:
-                # print("CS.found", pkt._name)
-                pkt = self._cs[pkt._name][0]
-                face.enqueue(pkt, addr)
-                return
+            ## print("CS.lookup", pkt._name)
+            #if pkt._name in self._cs:
+            #    # print("CS.found", pkt._name)
+            #    pkt = self._cs[pkt._name][0]
+            #    face.enqueue(pkt, addr)
+            #    return
             pkt = self._pit.rx_interest(pkt, face, addr)
             if pkt: # this is a new packet, forward it for the first time
                 face = self.fib_lpm(pkt._name)
                 if face:
                     face.enqueue(pkt)
             return
-        if isinstance(pkt, ContentPacket) and self._pit.is_pend(pkt._name):
-            if self._cs_sz + len(pkt._wire) < CS_MAX_CAP:
-                # print("CS.adding:", pkt._name)
-                self._cs[pkt._name] = (pkt, event.time(CS_TIMEOUT))
-                self._cs_sz += len(pkt._wire)
+        # caching not useful for ESP8266
+        #if isinstance(pkt, ContentPacket) and self._pit.is_pend(pkt._name):
+        #    if self._cs_sz + len(pkt._wire) < CS_MAX_CAP:
+        #        # print("CS.adding:", pkt._name)
+        #        self._cs[pkt._name] = (pkt, event.time(CS_TIMEOUT))
+        #        self._cs_sz += len(pkt._wire)
         if isinstance(pkt, (ContentPacket, NackPacket)):
             for face,addr in self._pit.waiting_face_iter(pkt):
                 face.enqueue(pkt, addr)
 
-def cs_gc_cb(loop, fwd):
-    exp = event.time()
-    rmset = []
-    for n,e in fwd._cs.items():
-        if event.time_cmp(e[1], exp) < 0:
-            rmset.append(n)
-    for n in rmset:
-        # print("cs.removing:", n)
-        fwd._cs_sz -= len(fwd._cs[n][0]._wire)
-        del fwd._cs[n]
+#def cs_gc_cb(loop, fwd):
+#    exp = event.time()
+#    rmset = []
+#    for n,e in fwd._cs.items():
+#        if event.time_cmp(e[1], exp) < 0:
+#            rmset.append(n)
+#    for n in rmset:
+#        # print("cs.removing:", n)
+#        fwd._cs_sz -= len(fwd._cs[n][0]._wire)
+#        del fwd._cs[n]
 
 def fwd_status_cb(loop, fwd):
     if sys.implementation.name == 'micropython':

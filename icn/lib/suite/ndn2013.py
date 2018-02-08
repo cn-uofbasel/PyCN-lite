@@ -134,11 +134,12 @@ def add_plain_name_components(comps, comp_list):
         comps.append(c.encode('ascii'))
 
 def get_plain_name_components(comps):
-    return [ c.decode('utf8') for c in comps ]
+    return [ bytes(c).decode('utf8') for c in comps ]
 
 # ---------------------------------------------------------------------------
 
 def decode_interest_wirebytes(data):  # returns (dict,tail)
+    data = memoryview(data)
     t, l, tail = readTL(data)
     if t != T_Interest:
         raise EOFError
@@ -159,6 +160,7 @@ def decode_interest_wirebytes(data):  # returns (dict,tail)
     return (d, tail)
 
 def decode_data_wirebytes(data):  # returns (dict,tail)
+    data = memoryview(data)
     t, l, tail = readTL(data)
     if t != T_Data:
         raise EOFError

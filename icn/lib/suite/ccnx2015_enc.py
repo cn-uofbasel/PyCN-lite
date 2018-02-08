@@ -3,6 +3,7 @@
 # (c) 2018-02-01 <christian.tschudin@unibas.ch>
 
 # encoder for CCNX packets
+# this module is not needed for forwarding and repo, saves memory for ESP8266
 
 try:
     from uhashlib import sha256

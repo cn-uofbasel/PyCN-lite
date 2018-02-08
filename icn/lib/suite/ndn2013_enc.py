@@ -3,6 +3,7 @@
 # (c) 2015-06-13 and 2018-01-27 <christian.tschudin@unibas.ch>
 
 # encoder for NDN packets
+# this module is not needed for forwarding and repo, saves memory for ESP8266
 
 try:
     from uhashlib import sha256

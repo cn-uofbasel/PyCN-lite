@@ -22,7 +22,7 @@ if sys.platform == 'esp8266':
                      # WU, see http://ndndemo.arl.wustl.edu/
 else:
     default_lan_if = ('127.0.0.1', 6363)
-    default_wan_if = ('192.168.1.247', 0)
+    default_wan_if = ('192.168.1.252', 0)
     default_repo_path = 'demo_repo_dir'
     multi.config(['ndn2013', 'ccnx2015'])
     default_wan_routes = [

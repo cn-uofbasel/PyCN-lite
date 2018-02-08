@@ -1,6 +1,6 @@
 # PyCN-lite
 
-README.md v2018-02-06
+README.md v2018-02-08
 
 This is a lightweight implementation of the two ICN protocols
 NDN and CCNx.
@@ -12,7 +12,8 @@ environments with standard Python3 (or Micropython) are supported, too.
 
 Servers included in PyCN-lite (both UNIX and ESP8266):
 * forwarder
-* reposerver
+* repo server
+* combined forwarder and repo server
 
 Command line tools included (UNIX only):
 * fetch, repo_ls, repo_put, dump_ndn2013, dump_ccnx2015
@@ -50,7 +51,7 @@ packets in/out/invalid: 3 5 0
 which will start the forwarder on port 6363. CTRL-C ends server execution.
 
 
-## REPOSERVER Howto (ESP8266)
+## REPO-SERVER Howto (ESP8266)
 
 * install Micropython on the ESP8266
 * configure the WiFi access point for 192.168.4.1 and essid of your choice
@@ -64,6 +65,24 @@ PyCN-lite repo server at ('192.168.4.1', 6363) serving ['ndn2013', 'ccnx2015']
 which will start the repo server on port 6363. CTRL-C ends server execution.
 
 
+## Combined FORWARD and REPO-SERVER Howto (ESP8266)
+
+* install Micropython on the ESP8266
+* configure the WiFi access point for 192.168.4.1 and essid of your choice
+* transfer the content of the 'icn' source code directory to '/lib/icn' on the ESP8266
+* run the following commands on the console (or put them into the boot.py script):
+```
+>>> import icn.server.fwdrepo as fr
+>>> fr.start()
+PyCN-lite combined forwarder and repo at ('192.168.4.1', 6363) serving ['ndn2013', 'ccnx2015']
+  /ndn/pycn-lite --> local_repo
+  /ndn --> ('192.168.4.2', 9999)
+  /ccnx/pycn-lite --> local_repo
+
+packets in/out/invalid: 0 0 0
+...
+```
+
 ## FETCH Howto (UNIX commandline)
 ```
 % cd PyCN-lite
@@ -74,7 +93,7 @@ which will start the repo server on port 6363. CTRL-C ends server execution.
 % ./fetch.py --suite ccnx2015 192.168.4.1:6363 /ccnx/pycn-lite/LICENSE
 ```
 
-## REPO_LS Howto (UNIX commandline) -- show content of a file system repo
+## REPO_LS Howto (UNIX commandline) - show content of a file system repo
 ```
 % cd icn/bin
 
@@ -106,21 +125,37 @@ a trimmed version of the license file was used such that the chunks fit
 in a single Ethernet frame, even when travelling over UDP.
 
 
-## REPOSERVER Howto (UNIX commandline) - run a ICN repo server
+## FORWARDER Howto (UNIX commandline) - run a ICN forwarder
 
 ```
 % cd icn/bin
 
-% ./reposerver.py demo_repo_dir 127.0.0.1:6363 &
-# or:
-% micropython ./reposerver.py demo_repo_dir 127.0.0.1:6363 &
+% ./srv_fwd.py 127.0.0.1:6363 &
 ```
 See icn/server/config.py for default parameters
 
 
-## FORWARDER Howto
+## REPO-SERVER Howto (UNIX commandline) - run a ICN repo server
 
-work in progress
+```
+% cd icn/bin
+
+% ./srv_repo.py demo_repo_dir 127.0.0.1:6363 &
+# or:
+% micropython ./srv_repo.py demo_repo_dir 127.0.0.1:6363 &
+```
+See icn/server/config.py for default parameters
+
+
+## Combined FORWARDER and REPO-SERVER Howto (UNIX commandline)
+
+```
+% cd icn/bin
+
+% ./srv_fwdrepo.py demo_repo_dir 127.0.0.1:6363 &
+```
+See icn/server/config.py for default parameters
+
 
 ## TODO
 
@@ -128,8 +163,9 @@ work in progress
 * move the pycn-lite/icn/bin directory to pycn-lite/bin
 * remove the absolute paths for micropython
 * validate the packet formats
-* add a fwd+repo server for the ESP8266
 * add the FLIC library
+* add (any and a lot of) unit tests
+* make CS optional for UNIX (currently disabled because of ESP8266)
 * ...
 
 ## Confirmed IoT devices running the PyCN-lite software:

@@ -9,7 +9,6 @@ except:
 
 from   icn.lib import hexlify
 import icn.lib.suite.multi
-import icn.lib.suite.ndn2013_enc
 
 # ---------------------------------------------------------------------------
 
@@ -96,7 +95,7 @@ class ContentPacket():
                        digest=None, meta=None):
         self._name   = name
         if payload:
-            assert (type(payload) in [bytes, bytearray]), "MUST be raw bytes"
+            assert (type(payload) in [bytes, bytearray, memoryview]), "MUST be raw bytes"
         self._cont   = payload
         self._wire   = wirebytes
         self._digest = digest

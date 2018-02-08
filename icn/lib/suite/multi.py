@@ -43,6 +43,8 @@ def decode_wirebytes(buf):
                 n = icn.lib.packet.Name(suite=s, hashId = hashId)
                 n._comps = d['name']
                 return icn.lib.packet.InterestPacket(n, buf)
+        except MemoryError:
+            print("out of mem")
         except:
             pass
 
@@ -58,6 +60,8 @@ def decode_wirebytes(buf):
                 #    return icn.lib.packet.NackPacket(n, d['data'])
                 return icn.lib.packet.ContentPacket(n, payload=d['data'],
                                                  wirebytes=buf, meta=metadict)
+        except MemoryError:
+            print("out of mem")
         except:
             pass
 
