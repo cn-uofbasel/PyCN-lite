@@ -8,6 +8,14 @@ import uselect
 import usocket
 import utime
 
+def time_cmp(a, b):
+    return utime.ticks_diff(a, b)
+
+def time(offs = 0):
+    if offs == 0:
+        return utime.ticks_ms()
+    return utime.ticks_add(utime.ticks_ms(), offs)
+
 # ---------------------------------------------------------------------------
 
 class Loop():
@@ -18,30 +26,27 @@ class Loop():
         self.p = uselect.poll()
 
     def register_timer(self, cb, delta, arg):
-        self.time_dict[cb] = [utime.ticks_ms(), int(delta*1000), arg]
+        self.time_dict[cb] = [utime.ticks_ms(), delta, arg]
 
-    def udp_open(self, addr, recv_cb, send_done_cb, arg):
-        # recv_cb MUST be set
+    def udp_open(self, addr, recv_ready_cb, send_done_cb, arg):
+        # recv_ready_cb MUST be set
         s = usocket.socket(usocket.AF_INET, usocket.SOCK_DGRAM)
-        addr = usocket.getaddrinfo(addr[0], addr[1])[0][-1]
-        s.bind(addr)
+        s.bind(usocket.getaddrinfo(addr[0], addr[1])[0][-1])
         if send_done_cb:
             s.setblocking(False)
-        self.sock_list.append([s, recv_cb, send_done_cb, arg])
+        self.sock_list.append([s, recv_ready_cb, send_done_cb, arg])
         self.p.register(s, uselect.POLLIN)
         return s
 
     def udp_sendto(self, s, buf, addr):
-        s.sendto(buf, addr)
-        for cb in self.sock_list:
-            if cb[0] == s and cb[2]:
-                self.p.register(s, uselect.POLLIN | uselect.POLLOUT)
+        rc = s.sendto(buf, addr)
+        self.p.register(s, uselect.POLLIN | uselect.POLLOUT)
 
     def udp_close(self, s):
         rm = None
         for i in range(len(self.sock_list)):
             if self.sock_list[i][0] == s:
-                self.p.unregister(s)
+                s.close()
                 rm = i
                 break
         if rm != None:
@@ -59,14 +64,21 @@ class Loop():
                     self.time_dict[cb][0] = utime.ticks_add(now, d)
                 if tout == None or d < tout:
                     tout = d
-            ok = self.p.poll(tout)
-            for s in ok:
-                e = s[1]
-                s = s[0]
+            try:
+                ok = self.p.poll(tout)
+            except:
+                # KeyboardInterrupt: release socket bindings
+                for e in self.sock_list:
+                    e[0].close()
+                    return
+            for s,mask in ok:
                 for cb in self.sock_list:
-                    if (e & uselect.POLLIN) and cb[0] == s:
+                    if cb[0] != s:
+                        continue
+                    if mask & uselect.POLLIN:
                         cb[1](self, s, cb[3])
-                    elif (e & uselect.POLLOUT) and cb[0] == s:
+                    if mask & uselect.POLLOUT:
+                        # print('removing POLLOUT')
                         self.p.register(s, uselect.POLLIN)
                         if cb[2]:
                             cb[2](self, s, cb[3])

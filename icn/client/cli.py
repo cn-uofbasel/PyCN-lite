@@ -9,9 +9,7 @@ import binascii
 import sys
 
 if sys.implementation.name == 'micropython':
-    sys.path.append("/Users/tschudin/proj/pycn-lite")
-else:
-    import traceback
+    sys.path.append("/Users/tschudin/proj/PyCN-lite")
 
 import icn.lib.network
 import icn.lib.packet
@@ -38,11 +36,17 @@ def do_fetch():
     if args.hashRestriction:
         args.hashRestriction = binascii.unhexlify(args.hashRestriction)
     name = icn.lib.packet.Name(args.name, suite_name=args.suite)
-    c = nw.fetch_content_bytes(name, args.hashRestriction, args.raw)
-    if args.raw:
-        sys.stdout.buffer.write(c)
-    else:
-        print("received %d bytes: '%s'" % (len(c), c))
+    try:
+        c = nw.fetch_content_bytes(name, args.hashRestriction, args.raw)
+        if args.raw:
+            sys.stdout.buffer.write(c)
+        else:
+            print('received %d bytes: "%s"' % (len(c), c))
+    except Exception as e:
+        if e.__class__.__name__ == 'TimeoutError': # (class not define in uPy)
+            print("# retransmission limit exceeded")
+        else:
+            raise
 
 # ---------------------------------------------------------------------------
 

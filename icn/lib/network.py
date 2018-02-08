@@ -67,7 +67,7 @@ class access_point():
         pkt = icn.lib.packet.InterestPacket(name, hashRestriction=digest)
         for i in range(RECV_MAX_RETRY_COUNT):
             if i != 0:
-                print("retransmitting Interest")
+                print("# retransmitting Interest")
             rc = self.send_pkt(pkt)
             (reply, addr) = self.recv_pkt(RECV_TIMEOUT_MSEC)
             if type(reply) == icn.lib.packet.ContentPacket:

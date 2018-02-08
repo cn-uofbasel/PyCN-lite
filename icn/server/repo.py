@@ -5,8 +5,11 @@
 # ICN repo server loop
 
 try:
-    import micropython
+    import usocket # or any other micropyhton-specific module
     import icn.server.event_micro as event
+    def q(): # for convenience
+        import machine
+        machine.reset()
 except:
     import icn.server.event_std   as event
 
@@ -29,7 +32,7 @@ def repo_recv_cb(loop, s, repo):
         # wire = pkt._name._suite.encode_nack_wirebytes(pkt._name._comps)
         # send this nack ...
         return
-    # print("repo: sending chunk for " + pkt._name.to_string())
+    # print("repo: send data for %s to %s" % (pkt._name.to_string(), str(addr)))
     loop.udp_sendto(s, wire, addr)
 
 def start(addr = icn.server.config.default_lan_if,
@@ -39,7 +42,7 @@ def start(addr = icn.server.config.default_lan_if,
     sock = loop.udp_open(addr, repo_recv_cb, None, theRepo)
     
     sn = [ s.Suite_name for s in icn.lib.suite.multi.Suites ]
-    print("Starting the ICN repo server at %s for %s " % (str(addr),str(sn)))
+    print("PyCN-lite repo server at", addr, "serving", sn)
 
     loop.forever()
 

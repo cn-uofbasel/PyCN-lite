@@ -28,35 +28,7 @@ def do_fwd():
     args = parser.parse_args()
 
     addr = args.addr.split(':')
-    icn.server.fwd.start(addr=(addr[0], int(addr[1])))
-
-    '''
-    fwd = icn.server.fwd.Forwarder()
-
-    listen = loop.create_datagram_endpoint(
-                 lambda: icn.server.fwd.FACE(fwd),
-                 local_addr=(addr[0], int(addr[1])))
-    srv_transport, srv_face = loop.run_until_complete(listen)
-
-    listen = loop.create_datagram_endpoint(
-                 lambda: icn.server.fwd.FACE(fwd),
-                 remote_addr=("127.0.0.1",9876))
-    repo_transport, repo_face = loop.run_until_complete(listen)
-
-    pfx = icn.lib.packet.Name('/the', suite_name='ccnx2015')
-    fwd._fib.add_rule(pfx, repo_face)
-    pfx = icn.lib.packet.Name('/the', suite_name='ndn2013')
-    fwd._fib.add_rule(pfx, repo_face)
-
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        print()
-
-    srv_transport.close()
-    repo_transport.close()
-    loop.close()
-    '''
+    icn.server.fwd.start(lan_addr=(addr[0], int(addr[1])))
 
 # ---------------------------------------------------------------------------
 
