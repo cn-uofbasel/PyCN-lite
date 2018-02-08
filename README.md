@@ -2,10 +2,11 @@
 
 README.md v2018-02-06
 
-This is lightweight implementation of the two ICN protocols NDN and CCNx.
+This is a lightweight implementation of the two ICN protocols
+NDN and CCNx.
 
 The code is written for Micropython
-[1.9.3](http://docs.micropython.org/en/v1.9.3/pyboard/)
+[v1.9.3](http://docs.micropython.org/en/v1.9.3/pyboard/)
 and runs on IoT devices like the ESP8266 with 28K RAM; UNIX
 environments with standard Python3 (or Micropython) are supported, too.
 
@@ -19,7 +20,10 @@ Command line tools included (UNIX only):
 Library included:
 * NDN and CCNx parsing/formatting library, can be used in IoT end devices
 
-Example config using an ESP8266 as a local ICN/WiFi access point and serving at the same time as a gateway to the NDN testbed:
+## Example config
+
+You can use a ESP8266 device as a local ICN/WiFi access point
+acting at the same time as a gateway to the NDN testbed:
 
 ![PyCN config](doc/PyCN-config.png "PyCN as an IoT gateway")
 
@@ -124,7 +128,7 @@ work in progress
 * move the pycn-lite/icn/bin directory to pycn-lite/bin
 * remove the absolute paths for micropython
 * validate the packet formats
-# add a fwd+repo server for the ESP8266
+* add a fwd+repo server for the ESP8266
 * add the FLIC library
 * ...
 
