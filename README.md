@@ -17,10 +17,11 @@ Servers included in PyCN-lite (both UNIX and ESP8266):
 * combined forwarder and repo server
 
 Command line tools included (UNIX only):
-* fetch, repo_ls, repo_put, dump_ndn2013, dump_ccnx2015
+* fetch (FLIC-enabled), repo_ls, repo_put (FLIC-enabled), dump_ndn2013, dump_ccnx2015
 
-Library included:
+Libraries included:
 * NDN and CCNx parsing/formatting library, can be used in IoT end devices
+* FLIC (File-Like ICN Collections), both generation and consumption
 
 ## Example config
 
@@ -167,10 +168,11 @@ See icn/server/config.py for default parameters
 * complete the FLIC library for ccnx
 * add (any and a lots of) unit tests
 * make the CS optional for UNIX (currently disabled because of ESP8266)
+* add signing routines
 * ...
 
 ## Confirmed IoT devices running the PyCN-lite software:
 
 ESP8266 (features separate WiFis for uplink and local AP, 96KB RAM of
-which 28KB RAM is left for Micrpython applications)
+which 28KB is left for Micropython applications)
 * [nodeMCU](http://nodemcu.com/index_en.html)
