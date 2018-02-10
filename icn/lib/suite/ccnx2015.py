@@ -8,12 +8,19 @@ except:
     import struct
 
 Suite_name = 'ccnx2015'
-MAX_CHUNK_SIZE = 1500-14 # fit in a Ethernet frame
+MAX_CHUNK_SIZE = 1500-48 # fits inside a UDP/IPv6/Ethernet frame, also IPv4
+MANIFEST_OVERHEAD = 32 # header plus some TLs, for manifest chunks
 
 enc = None    # will be set by icn.lib.suite.multi.config()
 
 # ----------------------------------------------------------------------
 # suite-specific constants
+
+# packet types (header byte at offset 1)
+CCNX_PT_Interest                        = 0
+CCNX_PT_Data                            = 1
+CCNX_PT_NACK                            = 2 # "Interest Return"
+CCNX_PT_Fragment                        = 3 # fragment
 
 # top level(Sect 3.4)
 CCNX_TLV_TL_Interest                    = 0x0001
@@ -57,17 +64,17 @@ CCNX_PAYLDTYPE_Key                      = 1
 CCNX_PAYLDTYPE_Link                     = 2
 CCNX_PAYLDTYPE_Manifest                 = 3
 
-# manifest (flic)
-CCNX_MANIFEST_HASHGROUP                 = 1
-CCNX_MANIFEST_HG_METADATA               = 1
-CCNX_MANIFEST_HG_PTR2DATA               = 2
-CCNX_MANIFEST_HG_PTR2MANIFEST           = 3
-CCNX_MANIFEST_MT_LOCATOR                = 0 # == CCNX_TLV_M_Name
-CCNX_MANIFEST_MT_EXTERNALMETADATA       = 1 # == CCNX_TLV_M_Name
-CCNX_MANIFEST_MT_BLOCKSIZE              = 2
-CCNX_MANIFEST_MT_OVERALLDATASIZE        = 3
-CCNX_MANIFEST_MT_OVERALLDATASHA256      = 4
-CCNX_MANIFEST_MT_TREEDEPTH              = 5
+# FLIC manifest
+T_MANIFEST_HASHGROUP                    = 1
+T_MANIFEST_HG_METADATA                  = 1
+T_MANIFEST_HG_PTR2DATA                  = 2
+T_MANIFEST_HG_PTR2MANIFEST              = 3
+T_MANIFEST_MT_LOCATOR                   = 0 # == CCNX_TLV_M_Name
+T_MANIFEST_MT_EXTERNALMETADATA          = 1 # == CCNX_TLV_M_Name
+T_MANIFEST_MT_BLOCKSIZE                 = 2
+T_MANIFEST_MT_OVERALLDATASIZE           = 3
+T_MANIFEST_MT_OVERALLDATASHA256         = 4
+T_MANIFEST_MT_TREEDEPTH                 = 5
 
 # validation algorithms (Sect 3.6.4.1)
 CCNX_VALIDALGO_CRC32C                   = 2

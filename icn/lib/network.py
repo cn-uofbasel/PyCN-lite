@@ -63,6 +63,19 @@ class access_point():
     def send_pkt(self, pkt, addr = None):
         self.send_wirebytes(pkt.to_wirebytes()[0], addr)
 
+    def fetch_pkt(self, name, digest=None):
+        pkt = icn.lib.packet.InterestPacket(name, hashRestriction=digest)
+        for i in range(RECV_MAX_RETRY_COUNT):
+            if i != 0:
+                print("# retransmitting Interest")
+            rc = self.send_pkt(pkt)
+            (reply, addr) = self.recv_pkt(RECV_TIMEOUT_MSEC)
+            if type(reply) == icn.lib.packet.ContentPacket:
+                return reply
+            if type(reply) == icn.lib.packet.NackPacket:
+                raise FileNotFoundError
+        raise TimeoutError
+
     def fetch_content_bytes(self, name, digest= None, raw=False):
         pkt = icn.lib.packet.InterestPacket(name, hashRestriction=digest)
         for i in range(RECV_MAX_RETRY_COUNT):

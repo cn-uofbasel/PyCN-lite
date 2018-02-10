@@ -8,6 +8,12 @@
 # if sys.implementation.name == 'micropython':
 #     import ustruct as struct
 
+try:
+    from uhashlib import sha256
+except:
+    from hashlib import sha256
+
+import icn.lib
 import icn.lib.suite.ndn2013 as ndn
 
 # ---------------------------------------------------------------------------
@@ -38,7 +44,16 @@ ndntlv_types = {
     ndn.T_FinalBlockId :     'FinalBlockId',
     ndn.T_SignatureType :    'SignatureType',
     ndn.T_KeyLocator :       'KeyLocator',
-    ndn.T_KeyLocatorDiges :  'KeyLocatorDigest'
+    ndn.T_KeyLocatorDiges :  'KeyLocatorDigest',
+    ndn.T_MANIFEST_HASHGROUP:            'Manifest_Hashgroup',
+    ndn.T_MANIFEST_HG_PTR2DATA:          'Manifest_DataPointer',
+    ndn.T_MANIFEST_HG_PTR2MANIFEST:      'Manifest_ManifestPointer',
+    ndn.T_MANIFEST_MT_LOCATOR:           'Manifest_Locator',
+    ndn.T_MANIFEST_MT_OVERALLDATASHA256: 'Manifest_OverallDataSha256',
+    ndn.T_MANIFEST_MT_OVERALLDATASIZE:   'Manifest_OverallDatasize',
+    ndn.T_MANIFEST_MT_BLOCKSIZE:         'Manifest_Blocksize',
+    ndn.T_MANIFEST_MT_TREEDEPTH:         'Manifest_TreeDepth',
+    ndn.T_MANIFEST_MT_EXTERNALMETADATA:  'Manifest_ExternalMetadata',
 }
 
 ndntlv_recurseSet = { 0x05, 0x06, 0x07, 0x09, 0x14, 0x16, 0x1c }
@@ -77,7 +92,10 @@ def hexDump(data, lev, doPrint):
         else:
             print(s)
 
+isManifest = False
+
 def dump_tlv(data, lev):
+    global isManifest
     while len(data) > 0:
         s = ''
         for i in range(0, lev):
@@ -87,8 +105,10 @@ def dump_tlv(data, lev):
             s = s + ndntlv_types[t]
         else:
             s = s + "type%x" % t
+        if t == ndn.T_ContentType and tail[:l] == b'\xfd\x04\x00':
+            isManifest = True
         print(s + " (%d bytes)" % l)
-        if t in ndntlv_recurseSet:
+        if t in ndntlv_recurseSet or (isManifest and t == ndn.T_Content):
             dump_tlv(tail[:l], lev+1)
         elif l > 0:
             hexDump(tail[:l], lev+1, t in ndntlv_isPrint)
@@ -105,13 +125,8 @@ if __name__ == '__main__':
 
     chunk = sys.stdin.buffer.read() # b/c we need a byte buffer, not a str
     dump_wirebytes(chunk)
-
-    if ndn.is_interest_wirebytes(chunk):
-        print("is interest")
-        print( ndn.decode_interest_wirebytes(chunk) )
-
-    elif ndn.is_data_wirebytes(chunk):
-        print("is data")
-        print( ndn.decode_data_wirebytes(chunk) )
+    h = sha256()
+    h.update(chunk)
+    print("sha256: 0x" + icn.lib.hexlify(h.digest()).decode('ascii'))
 
 # eof

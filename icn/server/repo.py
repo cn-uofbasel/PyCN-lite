@@ -24,11 +24,11 @@ def repo_recv_cb(loop, s, repo):
     # print("repo: got %d bytes" % len(buf))
     pkt = icn.lib.suite.multi.decode_wirebytes(buf)
     if pkt == None:
-        # print("repo: cannot decode")
+        print("repo: cannot decode")
         return
     wire = repo.get_chunk_bytes(pkt._name)
     if not wire:
-        # print("repo: no chunk for " + pkt._name.to_string())
+        print("repo: no chunk for " + pkt._name.to_string())
         # wire = pkt._name._suite.encode_nack_wirebytes(pkt._name._comps)
         # send this nack ...
         return

@@ -38,10 +38,12 @@ def mkTorL(x):
 def prepend_int(buf, start, v): # returns new start
     return prepend_blob(buf, start, mkTorL(v))
 
-def prepend_blob(buf, oldstart, blob): # returns new start
+def prepend_blob(buf, oldstart, blob, t=None): # returns new start
     newstart = oldstart - len(blob)
     buf[newstart:oldstart] = blob
-    return newstart
+    if t is None:
+        return newstart
+    return prepend_tl(buf, newstart, t, len(blob))
 
 def prepend_tl(buf, start, t, l): # returns new start
     start = prepend_int(buf, start, l)
@@ -56,6 +58,19 @@ def prepend_name(buf, start, comps):  # returns new start
     start = prepend_tl(buf, start, ndn.T_Name, end - start)
     return start
 
+def prepend_empty_signature(buf, start):
+    # DigestSha256 signature info + empty value
+    start = prepend_blob(buf, start, b'\x17\x00')
+    return prepend_blob(buf, start, b'\x16\x03\x1b\x01\x00')
+
+def prepend_metainfo(buf, start, contentType = None):
+    if contentType is None:
+        return prepend_blob(buf, start, b'\x14\x00')
+    metaEnd = start
+    start = prepend_int(buf, start, contentType)
+    start = prepend_tl(buf, start, ndn.T_ContentType, metaEnd - start)
+    return prepend_tl(buf, start, ndn.T_MetaInfo, metaEnd - start)
+
 #def name_components_to_wirebytes(comps):
 #    n = b''
 #    for c in comps:
@@ -68,6 +83,11 @@ def prepend_name(buf, start, comps):  # returns new start
 #    offs = prepend_name(buf, len(buf), comps)
 #    buf = buf[offs:]
 #    return buf
+
+def finalize(buf, dummyPT=None):
+    h = sha256()
+    h.update(buf)
+    return (buf, h.digest())
 
 # ---------------------------------------------------------------------------
 
@@ -85,40 +105,27 @@ def encode_interest_wirebytes(comps, hashId = None):
 
 def encode_data_wirebytes(comps, blob):
     buf = bytearray(ndn.MAX_CHUNK_SIZE)
-    start = len(buf)
-    # DigestSha256 signature info + empty value
-    start = prepend_blob(buf, start, bytearray([0x17, 0x00]))
-    start = prepend_blob(buf, start, bytearray([0x16, 0x03, 0x1b, 0x01, 0x00]))
+    start = prepend_empty_signature(buf, len(buf))
+    end = start
     start = prepend_blob(buf, start, blob)
     start = prepend_tl(buf, start, ndn.T_Content, len(blob))
-    # empty metadata
-    start = prepend_blob(buf, start, bytearray([ndn.T_MetaInfo, 0x00]))
+    start = prepend_metainfo(buf, start)
     start = prepend_name(buf, start, comps)
-    start = prepend_tl(buf, start, ndn.T_Data, len(buf) - start)
-    buf = buf[start:]
-    h = sha256()
-    h.update(buf)
-    return (buf, h.digest())
+    start = prepend_tl(buf, start, ndn.T_Data, end - start)
+    return finalize(buf[start:])
 
 def encode_nack_wirebytes(comps, blob=None):
     buf = bytearray(ndn.MAX_CHUNK_SIZE)
-    start = len(buf)
-    # DigestSha256 signature info + empty value
-    start = prepend_blob(buf, start, bytearray([0x17, 0x00]))
-    start = prepend_blob(buf, start, bytearray([0x16, 0x03, 0x1b, 0x01, 0x00]))
+    start = prepend_empty_signature(buf, len(buf))
+    end = start
     if blob == None:
         blob = ''
     else:
         start = prepend_blob(buf, start, blob)
     start = prepend_tl(buf, start, ndn.T_Content, len(blob))
-    # metadata with nack
-    metaEnd = start
-    start = prepend_blob(buf, start, bytearray([contentType_nack]))
-    start = prepend_tl(buf, start, ndn.T_ContentType, metaEnd - start)
-    start = prepend_tl(buf, start, ndn.T_MetaInfo, metaEnd - start)
+    start = prepend_metainfo(buf, start, contentType_nack)
     start = prepend_name(buf, start, comps)
-    start = prepend_tl(buf, start, ndn.T_Data, len(buf) - start)
-    return buf[start:]
-
+    start = prepend_tl(buf, start, ndn.T_Data, end - start)
+    return finalize(buf[start:])
 
 # eof

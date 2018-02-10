@@ -6,6 +6,7 @@
 
 import argparse
 import binascii
+import os
 import sys
 
 if sys.implementation.name == 'micropython':
@@ -13,8 +14,10 @@ if sys.implementation.name == 'micropython':
 
 import icn.lib.network
 import icn.lib.packet
+import icn.lib.flic_dec
+import icn.lib.flic_enc
 import icn.lib.suite.multi
-import icn.server.repo_fs
+import icn.server.repo_fs as repo_impl
 
 # ---------------------------------------------------------------------------
 
@@ -37,7 +40,13 @@ def do_fetch():
         args.hashRestriction = binascii.unhexlify(args.hashRestriction)
     name = icn.lib.packet.Name(args.name, suite_name=args.suite)
     try:
-        c = nw.fetch_content_bytes(name, args.hashRestriction, args.raw)
+        pkt = nw.fetch_pkt(name)
+        if pkt._meta and 'contentType' in pkt._meta \
+           and pkt._meta['contentType'] == 1024:
+            pkt._name._comps.pop()
+            c = icn.lib.flic_dec._manifestToBytes(nw, pkt._name, pkt.get_content())
+        else:
+            c = pkt.get_content()
         if args.raw:
             sys.stdout.buffer.write(c)
         else:
@@ -101,7 +110,7 @@ def repo_store_chunk_bytes(repo, name, wire, hashId):
             break
     if not fn:
         raise IOError
-    if len(wire) > 1500:
+    if len(wire) > 1500-50:
         sys.stdout.write("WARNING: chunk has %d bytes, exceeding the max Ethernet frame length of 1500 Bytes\n" % len(wire))
     fn = repo._path + os.sep + fn[0] + '.' + fn[1]
     if os.path.isfile(fn):
@@ -110,10 +119,10 @@ def repo_store_chunk_bytes(repo, name, wire, hashId):
     with open(fn, "wb") as f:
         f.write(wire)
 
-
 def do_repo_put():
 
     parser = argparse.ArgumentParser(description='ICN Store Content to Repo')
+    parser.add_argument('--flic', action='store_true')
     parser.add_argument('--prefix', type=str,
                         help="add a prefix to this repo")
     parser.add_argument('--suite', choices=['ndn2013', 'ccnx2015'],
@@ -127,20 +136,24 @@ def do_repo_put():
     else:
         pfxs = []
     args.name = icn.lib.packet.Name(args.name, suite_name=args.suite)
-    pkt = icn.lib.packet.ContentPacket(args.name, sys.stdin.buffer.read())
+    data = sys.stdin.buffer.read()
 
-    repo = icn.server.repo_fs.RepoFS(args.path, prefixes=pfxs, suite=args.suite)
-    (wire, hashId) = pkt.to_wirebytes()
-    repo_store_chunk_bytes(repo, args.name, wire, hashId)
+    repo = repo_impl.RepoFS(args.path, prefixes=pfxs, suite=args.suite)
+    if not args.flic:
+        pkt = icn.lib.packet.ContentPacket(args.name, data)
+        (wire, hashId) = pkt.to_wirebytes()
+        repo_store_chunk_bytes(repo, args.name, wire, hashId)
+    else:
+        icn.lib.flic_enc.bytesToManifest(repo, args.name, data)
 
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
     # this is UNIX land, add all protocol specs:
-    icn.lib.suite.multi.config(['ndn2013', 'ccnx2015'])
+    # icn.lib.suite.multi.config(['ndn2013', 'ccnx2015'])
+    icn.lib.suite.multi.config(['ndn2013'])
 
-    import os
     prog = sys.argv[0].split(os.sep)[-1]
 
     if prog == 'fetch.py':
@@ -149,5 +162,7 @@ if __name__ == '__main__':
         do_repo_ls()
     elif prog == 'repo_put.py':
         do_repo_put()
+    else:
+        print("?")
 
 # eof

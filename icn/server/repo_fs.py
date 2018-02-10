@@ -46,7 +46,7 @@ class RepoFS():
             self._prefixes.append(pkt._name)
         for pfx in prefixes:
             if not pfx in self._prefixes:
-                wb = pfx._suite.encode_interest_wirebytes(pfx._comps)
+                wb = pfx._suite.enc.encode_interest_wirebytes(pfx._comps)
                 h = sha1()
                 h.update(wb)
                 fn = self._path + '/prefix.' + h.hexdigest()[:24]

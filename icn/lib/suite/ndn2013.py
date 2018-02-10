@@ -5,7 +5,8 @@
 # parser for NDN packets, includes constants
 
 Suite_name = 'ndn2013'
-MAX_CHUNK_SIZE = 1500-14 # fit in a Ethernet frame
+MAX_CHUNK_SIZE = 1500-48 # fits inside a UDP/IPv6/Ethernet frame, also IPv4
+MANIFEST_OVERHEAD = 50 # some TLs, for manifest chunks
 
 enc = None    # will be set by icn.lib.suite.multi.config()
 
@@ -16,6 +17,7 @@ ContentType_blob     = 0
 ContentType_link     = 1
 ContentType_key      = 2
 ContentType_nack     = 3
+ContentType_FLIC     = 1024
 
 T_HashID             = 0x01
 T_Interest           = 0x05
@@ -43,6 +45,18 @@ T_FinalBlockId       = 0x1a
 T_SignatureType      = 0x1b
 T_KeyLocator         = 0x1c
 T_KeyLocatorDiges    = 0x1d
+
+# FLIC manifest
+T_MANIFEST_HASHGROUP             = 0xc0
+T_MANIFEST_HG_PTR2DATA           = 0xc1
+T_MANIFEST_HG_PTR2MANIFEST       = 0xc2
+T_MANIFEST_HG_METADATA           = T_MetaInfo
+T_MANIFEST_MT_LOCATOR            = 0xc3
+T_MANIFEST_MT_OVERALLDATASHA256  = 0xc4
+T_MANIFEST_MT_OVERALLDATASIZE    = 0xc5
+T_MANIFEST_MT_BLOCKSIZE          = 0xc6
+T_MANIFEST_MT_TREEDEPTH          = 0xc7
+T_MANIFEST_MT_EXTERNALMETADATA   = 0xc8
 
 # ----------------------------------------------------------------------
 # reading TLVs
@@ -76,11 +90,12 @@ def readTL(data):
     return (t, l, tail2)
 
 def readInt(data):
+    x = data[0]
+    if x < 253:
+        return x
     val = 0
-    for c in data:
-        # if type(data) == str:
-        #     c = ord(c)
-        val = (val<<8) | c
+    for x in range([2,4,8][x-253]):
+        val = (val<<8) | data[1+x]
     return val
 
 # ---------------------------------------------------------------------------
