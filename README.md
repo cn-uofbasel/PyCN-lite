@@ -2,13 +2,14 @@
 
 README.md v2018-02-08
 
-This is a lightweight implementation of the two ICN protocols
+PyCN-lite is a lightweight implementation of the two ICN protocols
 NDN and CCNx.
 
 The code is written for Micropython
-[v1.9.3](http://docs.micropython.org/en/v1.9.3/pyboard/)
-and runs on IoT devices like the ESP8266 with 28K RAM; UNIX
-environments with standard Python3 (or Micropython) are supported, too.
+[v1.9.3](http://docs.micropython.org/en/v1.9.3/pyboard/) and runs on
+IoT devices like the ESP8266 with 28K RAM left for application
+programs; UNIX environments with standard Python3 (or Micropython) are
+supported, too.
 
 Servers included in PyCN-lite (both UNIX and ESP8266):
 * forwarder
@@ -162,13 +163,14 @@ See icn/server/config.py for default parameters
 * make this a Python package (setup.cfg etc)
 * move the pycn-lite/icn/bin directory to pycn-lite/bin
 * remove the absolute paths for micropython
-* validate the packet formats
-* add the FLIC library
-* add (any and a lot of) unit tests
-* make CS optional for UNIX (currently disabled because of ESP8266)
+* validate the ndn and ccnx packet formats
+* complete the FLIC library for ccnx
+* add (any and a lots of) unit tests
+* make the CS optional for UNIX (currently disabled because of ESP8266)
 * ...
 
 ## Confirmed IoT devices running the PyCN-lite software:
 
-ESP8266 (features separate WiFis for uplink and local AP, has 28KB RAM)
+ESP8266 (features separate WiFis for uplink and local AP, 96KB RAM of
+which 28KB RAM is left for Micrpython applications)
 * [nodeMCU](http://nodemcu.com/index_en.html)
