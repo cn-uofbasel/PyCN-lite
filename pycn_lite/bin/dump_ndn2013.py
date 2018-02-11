@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pycn_lite/icn/lib/suite/ndn2013_dump.py
+# pycn_lite/lib/suite/ndn2013_dump.py
 
 # (c) 2015-06-13 and 2018-01-27 <christian.tschudin@unibas.ch>
 
@@ -8,13 +8,20 @@
 # if sys.implementation.name == 'micropython':
 #     import ustruct as struct
 
+import sys
+
 try:
     from uhashlib import sha256
+    sys.path.append(sys.path[0] + '/../..')
+    def read_from_stdin():
+        return bytearray(sys.stdin.read())
 except:
     from hashlib import sha256
+    def read_from_stdin():
+        return sys.stdin.buffer.read()
 
-import icn.lib
-import icn.lib.suite.ndn2013 as ndn
+import pycn_lite.lib
+import pycn_lite.lib.suite.ndn2013 as ndn
 
 # ---------------------------------------------------------------------------
 
@@ -116,17 +123,15 @@ def dump_tlv(data, lev):
 
 def dump_wirebytes(data):
     dump_tlv(data, 0)
+    h = sha256()
+    h.update(data)
+    print("pkt.digest= 0x" + str(pycn_lite.lib.hexlify(h.digest()), 'ascii'))
 
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
-    import sys
-
-    chunk = sys.stdin.buffer.read() # b/c we need a byte buffer, not a str
+    chunk = read_from_stdin()
     dump_wirebytes(chunk)
-    h = sha256()
-    h.update(chunk)
-    print("sha256: 0x" + icn.lib.hexlify(h.digest()).decode('ascii'))
 
 # eof

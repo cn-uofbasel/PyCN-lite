@@ -5,12 +5,21 @@
 # (c) 2018-01-27 <christian.tschudin@unibas.ch>
 
 import argparse
-import binascii
 import os
 import sys
 
 if sys.implementation.name == 'micropython':
-    sys.path.append("/Users/tschudin/proj/PyCN-lite")
+    sys.path.append(sys.path[0] + '/../..')
+    
+    def read_from_stdin():
+        return bytearray(sys.stdin.read())
+    def write_to_stdout(data):
+        return sys.stdout.write(data)
+else:
+    def read_from_stdin():
+        return sys.stdin.buffer.read()
+    def write_to_stdout(data):
+        return sys.stdout.buffer.write(data)
 
 import pycn_lite.lib.network
 import pycn_lite.lib.packet
@@ -37,7 +46,7 @@ def do_fetch():
     nw.attach(gw)
 
     if args.hashRestriction:
-        args.hashRestriction = binascii.unhexlify(args.hashRestriction)
+        args.hashRestriction = pycn_lite.lib.unhexlify(args.hashRestriction)
     name = pycn_lite.lib.packet.Name(args.name, suite_name=args.suite)
     try:
         pkt = nw.fetch_pkt(name)
@@ -48,9 +57,9 @@ def do_fetch():
         else:
             c = pkt.get_content()
         if args.raw:
-            sys.stdout.buffer.write(c)
+            write_to_stdout(c)
         else:
-            print('received %d bytes: "%s"' % (len(c), c))
+            print('received %d bytes: "%s"' % (len(c), bytes(c)))
     except Exception as e:
         if e.__class__.__name__ == 'TimeoutError': # (class not define in uPy)
             print("# retransmission limit exceeded")
@@ -64,13 +73,9 @@ def iter_content_items(path):
         t = fn.split('.')
         if len(t) != 2 or len(t[0]) != 24:
             continue
-        try:
-            with open(path + os.sep + fn, 'rb') as f:
-                buf = f.read()
-            pkt = pycn_lite.lib.suite.multi.decode_wirebytes(buf)
-        except:
-            # traceback.print_exc()
-            continue
+        with open(path + os.sep + fn, 'rb') as f:
+            buf = f.read()
+        pkt = pycn_lite.lib.suite.multi.decode_wirebytes(buf)
         if pkt:
             yield (pkt._name, len(buf))
         else:
@@ -87,6 +92,8 @@ def iter_prefixes(path):
         pkt = pycn_lite.lib.suite.multi.decode_wirebytes(buf)
         if isinstance(pkt, pycn_lite.lib.packet.InterestPacket):
             yield pkt._name
+        else:
+            print("unknown content in %s" % fn)
     raise StopIteration
 
 def do_repo_ls():
@@ -111,7 +118,7 @@ def repo_store_chunk_bytes(repo, name, wire, hashId):
     if not fn:
         raise IOError
     if len(wire) > 1500-50:
-        sys.stdout.write("WARNING: chunk has %d bytes, exceeding the max Ethernet frame length of 1500 Bytes\n" % len(wire))
+        sys.error.write("WARNING: chunk has %d bytes, exceeding the max Ethernet frame length of 1500 Bytes\n" % len(wire))
     fn = repo._path + os.sep + fn[0] + '.' + fn[1]
     if os.path.isfile(fn):
         # alert that file exists (or add "-nooverwrite" flag?)
@@ -136,7 +143,7 @@ def do_repo_put():
     else:
         pfxs = []
     args.name = pycn_lite.lib.packet.Name(args.name, suite_name=args.suite)
-    data = sys.stdin.buffer.read()
+    data = read_from_stdin()
 
     repo = repo_impl.RepoFS(args.path, prefixes=pfxs, suite=args.suite)
     if not args.flic:
@@ -151,8 +158,7 @@ def do_repo_put():
 if __name__ == '__main__':
 
     # this is UNIX land, add all protocol specs:
-    # pycn_lite.lib.suite.multi.config(['ndn2013', 'ccnx2015'])
-    pycn_lite.lib.suite.multi.config(['ndn2013'])
+    pycn_lite.lib.suite.multi.config(['ndn2013', 'ccnx2015'])
 
     prog = sys.argv[0].split(os.sep)[-1]
 

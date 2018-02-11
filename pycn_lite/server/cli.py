@@ -11,7 +11,7 @@ import os
 import sys
 
 if sys.implementation.name == 'micropython':
-    sys.path.append("/Users/tschudin/proj/PyCN-lite")
+    sys.path.append(sys.path[0] + '/../..')
 
 import pycn_lite.server.fwd
 import pycn_lite.server.fwdrepo

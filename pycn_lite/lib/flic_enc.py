@@ -2,8 +2,6 @@
 
 # (c) 2018-02-09 <christian.tschudin@unibas.ch>
 
-import copy
-
 import pycn_lite.lib.packet
 import pycn_lite.client.cli
 
@@ -19,7 +17,7 @@ def bytesToManifest(repo, name, data):
     s = name._suite
     MTU = s.MAX_CHUNK_SIZE - s.MANIFEST_OVERHEAD
     subname = pycn_lite.lib.packet.Name(suite=name._suite)
-    subname._comps = copy.deepcopy(name._comps)
+    subname._comps = [c for c in name._comps]
     subname._comps.pop()
     buf = bytearray(MTU)
     MTU -= len(buf) - s.enc.prepend_name(buf, len(buf), subname._comps)

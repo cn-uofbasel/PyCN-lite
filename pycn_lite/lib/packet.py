@@ -34,9 +34,9 @@ class Name():
         s = '/' + '/'.join(self._suite.get_plain_name_components(self._comps))
         e = ''
         if self._hashId:
-            e += " ,hashId=%s" % hexlify(self._hashId).decode('ascii')
+            e += " ,hashId=%s" % str(hexlify(self._hashId), 'ascii')
         if self._publId:
-            e += " ,publId=%s" % hexlify(self._publId).decode('ascii')
+            e += " ,publId=%s" % str(hexlify(self._publId), 'ascii')
         if len(e) > 0:
             s += '[' + e[2:] + ']'
         return s

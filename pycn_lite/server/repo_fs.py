@@ -55,11 +55,10 @@ class RepoFS():
                 self._prefixes.append(pfx)
 
     def name2pattern(self, name, digest):
-        fn = hexlify(name._hash())[:24]
-        fn = bytes(fn).decode('ascii')
+        fn = str(hexlify(name._hash())[:24], 'ascii')
         if digest:
-            digest = hexlify(digest)[:24]
-            return (fn, bytes(digest).decode('ascii'))
+            digest = str(hexlify(digest)[:24], 'ascii')
+            return (fn, digest)
         else:
             return (fn, '*')
 

@@ -177,7 +177,6 @@ See pycn_lite/server/config.py for default parameters
 ## TODO
 
 * make this a Python package (setup.cfg etc)
-* remove the absolute paths for micropython
 * validate the ndn and ccnx packet formats
 * complete the FLIC library for ccnx
 * add (any and a lots of) unit tests

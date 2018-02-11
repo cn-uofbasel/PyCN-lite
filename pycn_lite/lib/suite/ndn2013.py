@@ -149,7 +149,7 @@ def add_plain_name_components(comps, comp_list):
         comps.append(c.encode('ascii'))
 
 def get_plain_name_components(comps):
-    return [ bytes(c).decode('utf8') for c in comps ]
+    return [ str(bytes(c), 'utf8') for c in comps ]
 
 # ---------------------------------------------------------------------------
 

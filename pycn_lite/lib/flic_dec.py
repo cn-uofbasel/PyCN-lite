@@ -4,8 +4,6 @@
 
 # reconstruct a data collection organized via FLIC
 
-import copy
-
 # ----------------------------------------------------------------------
 
 def isRootManifest(pkt):

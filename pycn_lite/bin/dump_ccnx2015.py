@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 
-# pycn_lite/icn/lib/suite/ccnx2015_dump.py
+# pycn_lite/lib/suite/ccnx2015_dump.py
 
 # (c) 2018-02-01 <christian.tschudin@unibas.ch>
 
-import binascii
+import sys
 
-import os
-if os.uname()[0] == 'esp8266':
-    import uhashlib as hashlib
-    import ustruct   as struct
-else:
-    import hashlib
+try:
+    from uhashlib import sha256
+    import ustruct    as struct
+    sys.path.append(sys.path[0] + '/../..')
+    def read_from_stdin():
+        return bytearray(sys.stdin.read())
+except:
+    from hashlib import  sha256
     import struct
+    def read_from_stdin(): # b/c we need the raw bytes, not a str
+        return sys.stdin.buffer.read()
 
-import icn.lib.suite.ccnx2015 as ccnx
+import pycn_lite.lib
+import pycn_lite.lib.suite.ccnx2015 as ccnx
 
 # ---------------------------------------------------------------------------
 
@@ -101,22 +106,22 @@ ccnx2015tlv_typenames = {
     },
     CTX_MFST: {
         -1:                             "manifestCtx",
-        ccnx.CCNX_MANIFEST_HASHGROUP:        "HashGroup"
+        ccnx.T_MANIFEST_HASHGROUP:             "HashGroup"
     },
     CTX_MFST_HASHGRP: {
         -1:                             "manifestHashGroupCtx",
-        ccnx.CCNX_MANIFEST_HG_METADATA:         "MetaData",
-        ccnx.CCNX_MANIFEST_HG_PTR2DATA:         "DataPtr",
-        ccnx.CCNX_MANIFEST_HG_PTR2MANIFEST:         "ManifestPtr"
+        ccnx.T_MANIFEST_HG_METADATA:         "MetaData",
+        ccnx.T_MANIFEST_HG_PTR2DATA:         "DataPtr",
+        ccnx.T_MANIFEST_HG_PTR2MANIFEST:     "ManifestPtr"
     },
     CTX_MFST_HASHGRP_METADATA: {
         -1:                             "manifestMetaDataCtx",
-        ccnx.CCNX_MANIFEST_MT_LOCATOR:         "Locator",
-        ccnx.CCNX_MANIFEST_MT_EXTERNALMETADATA:         "ExternalMetaData",
-        ccnx.CCNX_MANIFEST_MT_BLOCKSIZE:         "BlockSize",
-        ccnx.CCNX_MANIFEST_MT_OVERALLDATASIZE:         "OverallSize",
-        ccnx.CCNX_MANIFEST_MT_OVERALLDATASHA256:         "OverallSHA256",
-        ccnx.CCNX_MANIFEST_MT_TREEDEPTH:         "TreeDepth"
+        ccnx.T_MANIFEST_MT_LOCATOR:          "Locator",
+        ccnx.T_MANIFEST_MT_EXTERNALMETADATA: "ExternalMetaData",
+        ccnx.T_MANIFEST_MT_BLOCKSIZE:        "BlockSize",
+        ccnx.T_MANIFEST_MT_OVERALLDATASIZE:  "OverallSize",
+        ccnx.T_MANIFEST_MT_OVERALLDATASHA256:  "OverallSHA256",
+        ccnx.T_MANIFEST_MT_TREEDEPTH:        "TreeDepth"
     },
     CTX_METADATA: {
         -1:                             "metaDataCtx",
@@ -160,12 +165,12 @@ recurse_dict = {
         ccnx.CCNX_TLV_M_Name:            CTX_NAME },
     CTX_MFST : {
         ccnx.CCNX_TLV_M_Name:            CTX_NAME,
-        ccnx.CCNX_MANIFEST_HASHGROUP:    CTX_MFST_HASHGRP },
+        ccnx.T_MANIFEST_HASHGROUP:       CTX_MFST_HASHGRP },
     CTX_MFST_HASHGRP : {
-        ccnx.CCNX_MANIFEST_HG_METADATA:  CTX_MFST_HASHGRP_METADATA },
+        ccnx.T_MANIFEST_HG_METADATA:     CTX_MFST_HASHGRP_METADATA },
     CTX_MFST_HASHGRP_METADATA : {
-        ccnx.CCNX_MANIFEST_MT_LOCATOR:   CTX_NAME,
-        ccnx.CCNX_MANIFEST_MT_EXTERNALMETADATA: CTX_NAME },
+        ccnx.T_MANIFEST_MT_LOCATOR:      CTX_NAME,
+        ccnx.T_MANIFEST_MT_EXTERNALMETADATA: CTX_NAME },
     CTX_NAME : {
         ccnx.CCNX_TLV_N_Meta:            CTX_METADATA },
     CTX_VALIDALGO : {
@@ -247,26 +252,16 @@ def dump_wirebytes(data):
         print('hdr.option=%d bytes' % len(options))
     print("hdr.end")
 
-    sha256 = hashlib.sha256()
-    sha256.update(body)
+    h = sha256()
+    h.update(body)
     dump_tlv(body, CTX_TOPLEVEL, 1)
-    print("pkt.digest=%s" % binascii.hexlify(sha256.digest()).decode('ascii'))
+    print("pkt.digest= 0x" + str(pycn_lite.lib.hexlify(h.digest()),'ascii'))
 
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
-    import sys
-
-    chunk = sys.stdin.buffer.read() # b/c we need a byte buffer, not a str
+    chunk = read_from_stdin()
     dump_wirebytes(chunk)
-
-    if ccnx.is_interest_wirebytes(chunk):
-        print("is interest")
-        print( ccnx.decode_interest_wirebytes(chunk) )
-
-    elif ccnx.is_data_wirebytes(chunk):
-        print("is data")
-        print( ccnx.decode_data_wirebytes(chunk) )
 
 # eof
