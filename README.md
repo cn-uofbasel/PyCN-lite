@@ -35,11 +35,11 @@ acting at the same time as a gateway to the NDN testbed:
 
 * install Micropython on the ESP8266
 * configure the WiFi access point for 192.168.4.1 and essid of your choice
-* adjust the default settings in icn/server/config.py
-* transfer the content of the 'icn' source code directory to '/lib/icn' on the ESP8266
+* adjust the default settings in pycn_lite/server/config.py
+* transfer the content of the 'pycn_lite' source code directory to '/lib/pycn_lite' on the ESP8266
 * run the following commands on the console (or put them into the boot.py script):
 ```
->>> import icn.server.fwd as f
+>>> import pycn_lite.server.fwd as f
 >>> f.start()
 PyCN-lite forwarder at ('192.168.4.1', 6363) serving ['ndn2013', 'ccnx2015']
   /ndn --> ('128.252.153.194', 6363)
@@ -57,10 +57,10 @@ which will start the forwarder on port 6363. CTRL-C ends server execution.
 
 * install Micropython on the ESP8266
 * configure the WiFi access point for 192.168.4.1 and essid of your choice
-* transfer the content of the 'icn' source code directory to '/lib/icn' on the ESP8266
+* transfer the content of the 'pycn_lite' source code directory to '/lib/pycn_lite' on the ESP8266
 * run the following commands on the console (or put them into the boot.py script):
 ```
->>> import icn.server.repo as r
+>>> import pycn_lite.server.repo as r
 >>> r.start()
 PyCN-lite repo server at ('192.168.4.1', 6363) serving ['ndn2013', 'ccnx2015']
 ```
@@ -71,10 +71,10 @@ which will start the repo server on port 6363. CTRL-C ends server execution.
 
 * install Micropython on the ESP8266
 * configure the WiFi access point for 192.168.4.1 and essid of your choice
-* transfer the content of the 'icn' source code directory to '/lib/icn' on the ESP8266
+* transfer the content of the 'pycn_lite' source code directory to '/lib/pycn_lite' on the ESP8266
 * run the following commands on the console (or put them into the boot.py script):
 ```
->>> import icn.server.fwdrepo as fr
+>>> import pycn_lite.server.fwdrepo as fr
 >>> fr.start()
 PyCN-lite combined forwarder and repo at ('192.168.4.1', 6363) serving ['ndn2013', 'ccnx2015']
   /ndn/pycn-lite --> local_repo
@@ -89,7 +89,7 @@ packets in/out/invalid: 0 0 0
 ```
 % cd PyCN-lite
 % export PYTHONPATH=`pwd`
-% cd icn/bin
+% cd bin
 
 % ./fetch.py 192.168.4.1:6363 /ndn/pycn-lite/LICENSE
 % ./fetch.py --suite ccnx2015 192.168.4.1:6363 /ccnx/pycn-lite/LICENSE
@@ -97,15 +97,15 @@ packets in/out/invalid: 0 0 0
 
 ## REPO_LS Howto (UNIX commandline) - show content of a file system repo
 ```
-% cd icn/bin
+% cd bin
 
-% ls -1 demo_repo_dir/
+% ls -1 ../demo/repo_dir/
 238703794c9a9d8f5757d92f.7d927eef66cd1f871279a6ac
 350d8f87c7c04e7e56e212b4.6fb12aec48b6432bd3fd337a
 prefix.3885558c37222613acca6faa
 prefix.ac6dcf268096fcc84a8238dc
 
-% ./repo_ls.py demo_repo_dir
+% ./repo_ls.py ../demo/repo_dir
 content (suite=ccnx2015, len=1639): /ccnx/pycn-lite/LICENSE
 content (suite=ndn2013, len=1631): /ndn/pycn-lite/LICENSE
 prefix (suite=ndn2013): /ndn/pycn-lite
@@ -114,55 +114,69 @@ prefix (suite=ccnx2015): /ccnx/pycn-lite
 
 ## REPO_PUT Howto (UNIX commandline) - add content to a file system repo
 ```
-% cd icn/bin
+% cd bin
 
-% ./repo_put.py --prefix /ndn/pycn-lite demo_repo_dir /ndn/pycn-lite/LICENSE <../../LICENSE.trimmed 
-% ./repo_put.py --prefix /ccnx/pycn-lite --suite ccnx2015 demo_repo_dir /ccnx/pycn-lite/LICENSE <../../LICENSE.trimmed
+% ./repo_put.py --prefix /ndn/pycn-lite ../demo/repo_dir /ndn/pycn-lite/LICENSE <../../LICENSE.trimmed 
+% ./repo_put.py --prefix /ccnx/pycn-lite --suite ccnx2015 ../demo/repo_dir /ccnx/pycn-lite/LICENSE <../../LICENSE.trimmed
 ```
 
 The above commands were used to populate the demo repo directory. The
 prefix parameter persists a prefix if is it not already existing: the
 parameter can be ommitted in subsequence put operations. Note that
-a trimmed version of the license file was used such that the chunks fit
+a trimmed version of the license file was used such that the chunk fitted
 in a single Ethernet frame, even when travelling over UDP.
+
+In case of larger content, or if you use the --flic option, the
+repo_put command uses the FLIC method to split the content into
+multiple chunks linked through "hash-based names" and accessed through
+a "root manifest". The fetch command automatically recognizes
+FLIC-splitted content and reassembles the content in a fully
+transparent way:
+
+```
+% ./repo_put.py --flic --prefix /ndn/pycn-lite ../demo/flic_dir /ndn/pycn-lite/LICENSE <../../LICENSE
+% ./repo_put.py --prefix /ccnx/pycn-lite --suite ccnx2015 ../demo/flic_dir /ccnx/pycn-lite/LICENSE <../../LICENSE
+```
+
+Note the different directory names for the repo's files (to avoid
+confusion when looking at the example chunks).
 
 
 ## FORWARDER Howto (UNIX commandline) - run a ICN forwarder
 
 ```
-% cd icn/bin
+% cd bin
 
 % ./srv_fwd.py 127.0.0.1:6363 &
 ```
-See icn/server/config.py for default parameters
+See pycn_lite/server/config.py for default parameters
 
 
 ## REPO-SERVER Howto (UNIX commandline) - run a ICN repo server
 
 ```
-% cd icn/bin
+% cd bin
 
-% ./srv_repo.py demo_repo_dir 127.0.0.1:6363 &
+% ./srv_repo.py ../demo/repo_dir 127.0.0.1:6363 &
 # or:
-% micropython ./srv_repo.py demo_repo_dir 127.0.0.1:6363 &
+% micropython ./srv_repo.py ../demo/repo_dir 127.0.0.1:6363 &
 ```
-See icn/server/config.py for default parameters
+See pycn_lite/server/config.py for default parameters
 
 
 ## Combined FORWARDER and REPO-SERVER Howto (UNIX commandline)
 
 ```
-% cd icn/bin
+% cd bin
 
-% ./srv_fwdrepo.py demo_repo_dir 127.0.0.1:6363 &
+% ./srv_fwdrepo.py ../demo/repo_dir 127.0.0.1:6363 &
 ```
-See icn/server/config.py for default parameters
+See pycn_lite/server/config.py for default parameters
 
 
 ## TODO
 
 * make this a Python package (setup.cfg etc)
-* move the pycn-lite/icn/bin directory to pycn-lite/bin
 * remove the absolute paths for micropython
 * validate the ndn and ccnx packet formats
 * complete the FLIC library for ccnx
