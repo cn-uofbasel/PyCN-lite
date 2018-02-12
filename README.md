@@ -2,12 +2,10 @@
 
 README.md v2018-02-12
 
-PyCN-lite is a lightweight implementation of the two ICN protocols
-NDN and CCNx.
-
 ![PyCN logo](doc/pycn-lite-logo-952x184.png)
 
-PyCN-lite is written for Micropython
+PyCN-lite is a lightweight implementation of the two ICN protocols
+NDN and CCNx. It is written for Micropython
 [v1.9.3](http://docs.micropython.org/en/v1.9.3/pyboard/) and runs on
 IoT devices like the ESP8266 with 28K RAM left for application
 programs; UNIX environments with standard Python3 (or Micropython) are
