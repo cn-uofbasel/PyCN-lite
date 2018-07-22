@@ -21,6 +21,7 @@ else:
     def write_to_stdout(data):
         return sys.stdout.buffer.write(data)
 
+import pycn_lite.lib
 import pycn_lite.lib.network
 import pycn_lite.lib.packet
 import pycn_lite.lib.flic_dec
@@ -59,9 +60,10 @@ def do_fetch():
         if args.raw:
             write_to_stdout(c)
         else:
-            print('received %d bytes: "%s"' % (len(c), bytes(c)))
+            print("received packet named '%s'" % pkt._name)
+            print('with %d content bytes: "%s"' % (len(c), bytes(c)))
     except Exception as e:
-        if e.__class__.__name__ == 'TimeoutError': # (class not define in uPy)
+        if e.__class__.__name__ == 'TimeoutError': # (class not defined in uPy)
             print("# retransmission limit exceeded")
         else:
             raise

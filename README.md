@@ -1,6 +1,29 @@
 # PyCN-lite
 
-README.md v2018-02-12
+## README.md for the fuzzing branch, v2018-07-22
+
+~~~
+# set PYTHONPATH
+# and go to the commands directory:
+$ cd pycn_lite/bin
+
+# list content of the demo repo:
+$ ./repo_ls.py ../../demo/repo_dir/
+
+# start server:
+$ ./srv_repo.py ../../demo/repo_dir 127.0.0.1:6363 &
+
+# fetch content:
+$ ./fetch.py 127.0.0.1:6363 /ndn/pycn-lite/LICENSE
+received packet named '/ndn/pycn-lite/LICENSE'
+with 921 content bytes: "b'BSD 3-Clause Lic ...
+
+$ ./fetch.py dmi-ndn-testbed1.dmi.unibas.ch:6363 /ndn/ch/unibas/ping/111
+received packet named '/ndn/ch/unibas/ping/111'
+with 0 content bytes: "b''"
+~~~
+
+## README.md v2018-02-12
 
 ![PyCN logo](doc/pycn-lite-logo-952x184.png)
 

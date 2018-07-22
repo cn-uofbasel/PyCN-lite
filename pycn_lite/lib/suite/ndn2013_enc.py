@@ -18,25 +18,23 @@ import pycn_lite.lib.suite.ndn2013 as ndn
 
 def mkTorL(x):
     if x < 253:
-        buf = bytes([x])
-    elif x < 0x10000:
-        buf = bytes([253, x >> 8, x & 0x0ff])
-    elif x < 0x100000000:
-        buf = b'\xfe    '
-        for i in range(4,1,-1):
-            b[i] = x & 0x0ff
-            x >>= 8
-    else:
-        buf = b'\xff        '
-        for i in range(8,1,-1):
-            b[i] = x & 0x0ff
-            x >>= 8
-    return buf
+        return bytes([x])
+    if x < 0x10000:
+        return bytes([253, x >> 8, x & 0x0ff])
+    if x < 0x100000000:
+        return b'\xfe' + x.to_bytes(4, 'big')
+    return b'\xff' + x.to_bytes(8, 'big')
 
-# def mk_name_tlv(comps):
+def byte_length(v):
+    v, n = (v>>8, 1)
+    while v != 0:
+        n += 1
+        v >>= 8
+    return n
 
-def prepend_int(buf, start, v): # returns new start
-    return prepend_blob(buf, start, mkTorL(v))
+def prepend_uint(buf, start, v, t = None): # returns new start
+    b = v.to_bytes(byte_length(v), 'big')
+    return prepend_blob(buf, start, b, t=t)
 
 def prepend_blob(buf, oldstart, blob, t=None): # returns new start
     newstart = oldstart - len(blob)
@@ -46,17 +44,15 @@ def prepend_blob(buf, oldstart, blob, t=None): # returns new start
     return prepend_tl(buf, newstart, t, len(blob))
 
 def prepend_tl(buf, start, t, l): # returns new start
-    start = prepend_int(buf, start, l)
-    start = prepend_int(buf, start, t)
-    return start
+    start = prepend_blob(buf, start, mkTorL(l))
+    return prepend_blob(buf, start, mkTorL(t))
 
 def prepend_name(buf, start, comps):  # returns new start
     end = start
     for i in range(len(comps)-1, -1, -1):
-        start = prepend_blob(buf, start, comps[i])
-        start = prepend_tl(buf, start, ndn.T_NameComponent, len(comps[i]))
-    start = prepend_tl(buf, start, ndn.T_Name, end - start)
-    return start
+        start = prepend_blob(buf, start, comps[i], t=ndn.T_NameComponent)
+        # start = prepend_tl(buf, start, ndn.T_NameComponent, len(comps[i]))
+    return prepend_tl(buf, start, ndn.T_Name, end - start)
 
 def prepend_empty_signature(buf, start):
     # DigestSha256 signature info + empty value
@@ -67,22 +63,8 @@ def prepend_metainfo(buf, start, contentType = None):
     if contentType is None:
         return prepend_blob(buf, start, b'\x14\x00')
     metaEnd = start
-    start = prepend_int(buf, start, contentType)
-    start = prepend_tl(buf, start, ndn.T_ContentType, metaEnd - start)
+    start = prepend_uint(buf, start, contentType, ndn.T_ContentType)
     return prepend_tl(buf, start, ndn.T_MetaInfo, metaEnd - start)
-
-#def name_components_to_wirebytes(comps):
-#    n = b''
-#    for c in comps:
-#        # if type(c) != str:
-#        #    c = c.getValue().toBytes()
-#        n += mkTorL(ndn.T_NameComponent) + mkTorL(len(c)) + c
-#    return mkTorL(ndn.T_Name) + mkTorL(len(n)) + n
-
-#    buf = bytearray(3000)
-#    offs = prepend_name(buf, len(buf), comps)
-#    buf = buf[offs:]
-#    return buf
 
 def finalize(buf, dummyPT=None):
     h = sha256()
@@ -91,14 +73,14 @@ def finalize(buf, dummyPT=None):
 
 # ---------------------------------------------------------------------------
 
-def encode_interest_wirebytes(comps, hashId = None):
+def encode_interest_wirebytes(comps, hashId = None, payload = None):
+    assert payload == None
     buf = bytearray(ndn.MAX_CHUNK_SIZE)
     start = len(buf) - 4
     buf[start:] = os.urandom(4)
     start = prepend_tl(buf, start, ndn.T_Nonce, 0x04)
     if hashId:
-        start = prepend_blob(buf, start, hashId)
-        start = prepend_tl(buf, start, ndn.T_HashID, len(hashId))
+        start = prepend_blob(buf, start, hashId, t=ndn.T_HashID)
     start = prepend_name(buf, start, comps)
     start = prepend_tl(buf, start, ndn.T_Interest, len(buf) - start)
     return buf[start:]
@@ -107,8 +89,7 @@ def encode_data_wirebytes(comps, blob):
     buf = bytearray(ndn.MAX_CHUNK_SIZE)
     start = prepend_empty_signature(buf, len(buf))
     end = start
-    start = prepend_blob(buf, start, blob)
-    start = prepend_tl(buf, start, ndn.T_Content, len(blob))
+    start = prepend_blob(buf, start, blob, t=ndn.T_Content)
     start = prepend_metainfo(buf, start)
     start = prepend_name(buf, start, comps)
     start = prepend_tl(buf, start, ndn.T_Data, end - start)
@@ -120,9 +101,7 @@ def encode_nack_wirebytes(comps, blob=None):
     end = start
     if blob == None:
         blob = ''
-    else:
-        start = prepend_blob(buf, start, blob)
-    start = prepend_tl(buf, start, ndn.T_Content, len(blob))
+    start = prepend_blob(buf, start, blob, t=ndn.T_Content)
     start = prepend_metainfo(buf, start, contentType_nack)
     start = prepend_name(buf, start, comps)
     start = prepend_tl(buf, start, ndn.T_Data, end - start)

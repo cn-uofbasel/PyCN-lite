@@ -8,7 +8,7 @@ Suite_name = 'ndn2013'
 MAX_CHUNK_SIZE = 1500-48 # fits inside a UDP/IPv6/Ethernet frame, also IPv4
 MANIFEST_OVERHEAD = 50 # some TLs, for manifest chunks
 
-enc = None    # will be set by pycn_lite.lib.suite.multi.config()
+has_interest_payload = False
 
 # ----------------------------------------------------------------------
 # suite-specific constants
@@ -64,23 +64,13 @@ T_MANIFEST_MT_EXTERNALMETADATA   = 0xc8
 def readTorL(data):
     if not data or len(data) == 0:
         raise EOFError
-    # b = ord(data[0]) if type(data) == str else data[0]
-    b = data[0]
-    if b < 253:
-        return (b, data[1:])
-    maxlen = len(data) - 1
-    if maxlen < 3:
+    val = data[0]
+    if val < 253:
+        return (val, data[1:])
+    n = [3,5,9][val-253]
+    if len(data) < n:
         raise EOFError
-    if b == 253:
-        return (data[1]<<8 | data[2], data[3:])
-    if maxlen < 5:
-        raise EOFError
-    if b == 254:
-        return (data[1]<<24 | data[2]<<16 | data[3]<<8 | data[4], data[5:])
-    if maxlen < 9:
-        raise EOFError
-    b = data[1]<<32 | data[2]<<24 | data[3]<<16 | data[4]<<8 | data[5]
-    return (b<<24 | data[6]<<16 | data[7]<<8 | data[8], data[9:])
+    return (readUint(data[1:n]), data[n:])
 
 def readTL(data):
     (t, tail1) = readTorL(data)
@@ -89,30 +79,16 @@ def readTL(data):
         raise EOFError
     return (t, l, tail2)
 
-def readInt(data):
-    x = data[0]
-    if x < 253:
-        return x
-    val = 0
-    for x in range([2,4,8][x-253]):
-        val = (val<<8) | data[1+x]
-    return val
+def readUint(data):
+    return int.from_bytes(data, 'big')
 
 # ---------------------------------------------------------------------------
 
 def is_interest_wirebytes(data):
-    if not data or len(data) == 0:
-        raise EOFError
-    # b = ord(data[0]) if type(data) == str else data[0]
-    b = data[0]
-    return b == T_Interest
+    return data[0] == T_Interest
 
 def is_data_wirebytes(data):
-    if not data or len(data) == 0:
-        raise EOFError
-    # b = ord(data[0]) if type(data) == str else data[0]
-    b = data[0]
-    return b == T_Data
+    return data[0] == T_Data
 
 def nameTLV_to_comps(data): # returns list of components
     name = []
@@ -129,27 +105,13 @@ def metadataTLV_to_dict(data):
     while len(data) > 0:
         t, l, tail = readTL(data)
         if t == T_ContentType:
-            meta['contentType']     = readInt(tail[:l])
+            meta['contentType']     = readUint(tail[:l])
         elif t == T_FreshnessPeriod:
-            meta['freshnessPeriod'] = readInt(tail[:l])
+            meta['freshnessPeriod'] = readUint(tail[:l])
         elif t == T_FinalBlockId:
             meta['finalBlockId']    = tail[:l]
         data = tail[l:]
     return meta
-
-def wire_to_name_components(data): # returns an array with components
-    t, l, tail = readTL(data)
-    if t != T_Name:
-        return None
-    return nameTLV_to_comps(tail[:l])
-
-def add_plain_name_components(comps, comp_list):
-    for c in comp_list:
-        # FIXME: handle escaped chars
-        comps.append(c.encode('ascii'))
-
-def get_plain_name_components(comps):
-    return [ str(bytes(c), 'utf8') for c in comps ]
 
 # ---------------------------------------------------------------------------
 

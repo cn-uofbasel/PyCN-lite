@@ -14,24 +14,29 @@ import pycn_lite.lib.suite.multi
 
 class Name():
 
-    def __init__(self, display_str = None, suite=None, suite_name='ndn2013',
-                       hashId=None):
+    def __init__(self, display_str = None, comps = None, suite=None,
+                       suite_name='ndn2013', hashId=None):
         if suite:
             self._suite = suite
         else:
             self._suite = pycn_lite.lib.suite.multi.suite_from_str(suite_name)
         self._hashId = hashId
         self._publId = None
-        self._comps = []
+        self._comps = None
         if display_str:
             if display_str[-1] == '/':
                 display_str = display_str[:-1]
-            self._suite.add_plain_name_components(self._comps,
-                                                  display_str.split("/")[1:])
+            self._comps = [ pycn_lite.lib.escapedUTF8toComponent(c) \
+                                        for c in display_str.split("/")[1:] ]
+        if comps:
+            self._comps = comps
+        if self._comps is None:
+            self._comps = []
 
     def to_string(self):
         # FIXME: escape binary values and '/' as part of a component
-        s = '/' + '/'.join(self._suite.get_plain_name_components(self._comps))
+        comps = [ pycn_lite.lib.componentToEscapedUTF8(c) for c in self._comps ]
+        s = '/' + '/'.join(comps)
         e = ''
         if self._hashId:
             e += " ,hashId=%s" % str(hexlify(self._hashId), 'ascii')
@@ -77,16 +82,17 @@ class Name():
 
 class InterestPacket():
 
-    def __init__(self, name, wire=None, hashRestriction=None):
+    def __init__(self, name, wire=None, hashRestriction=None, payload=None):
         self._name = name
         self._wire = wire
         self._hashRestr = hashRestriction
+        self._payload = payload
 
     def to_wirebytes(self): # returns wirebytes
         if not self._wire:
             s = self._name._suite.enc
             self._wire = s.encode_interest_wirebytes(self._name._comps,
-                                                     self._hashRestr)
+                           hashId=self._hashRestr, payload=self._payload)
         return (self._wire, None)
 
 # ---------------------------------------------------------------------------
